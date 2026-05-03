@@ -2,7 +2,7 @@
 --  대학 중고거래 플랫폼 — Database Schema  (Supabase / PostgreSQL 15+)
 -- ============================================================
 --  DBMS    : Supabase (PostgreSQL 15+)
---  작성일  : 2026-05-01
+--  작성일  : 2026-05-03 (통합본)
 --  참조    : tableSpec.md / platformDataDoc.md / ERD.jpg
 -- ============================================================
 --
@@ -12,7 +12,7 @@
 --
 --    방법 2 — Supabase CLI 마이그레이션 (권장):
 --      1) supabase init  (최초 1회)
---      2) 이 파일을 supabase/migrations/20260501000000_init.sql 로 복사
+--      2) 이 파일을 supabase/migrations/20260503000000_init.sql 로 복사
 --      3) supabase db push  (원격) 또는  supabase db reset  (로컬)
 --
 --    방법 3 — psql 직접 연결:
@@ -26,29 +26,35 @@
 --      public.users 프로필 행을 자동 생성함.
 --
 --  [테이블 생성 순서 — FK 의존성 기준]
---    regions → users → categories → products → product_images
---    → wishlists → chat_rooms → chat_participants → chat_messages
---    → transactions → reviews → manner_keywords → review_keywords
---    → reports → report_evidences → user_penalties → audit_logs
---    → (Materialized View) mv_popular_products
+--    [메인 도메인]
+--      regions → majors → users → categories
+--      → products → product_images → book_conditions / device_conditions
+--      → wishlists → chat_rooms → chat_participants → chat_messages
+--      → transactions → reviews → manner_keywords → review_keywords
+--      → reports → report_evidences → user_penalties → audit_logs
+--      → (Materialized View) mv_popular_products
+--    [수강/추천 도메인]
+--      courses → course_schedules → user_courses
+--      → item_categories → course_recommendations
+--    [교환학생 도메인]
+--      countries → exchange_students → essential_packages → package_items
+--      → package_matches → hygiene_certifications → package_listings
+--      → exchange_wishlists
 -- ============================================================
 
 BEGIN;  -- 전체 DDL 을 트랜잭션으로 래핑 — 오류 시 전체 롤백
 
 -- ============================================================
 --  0. 확장 (Supabase 기본 활성화 확인)
---     Supabase 는 pgcrypto, uuid-ossp 를 기본 제공.
---     gen_random_uuid() 는 PostgreSQL 13+ 에서 내장 함수로 사용 가능.
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";   -- gen_random_uuid() 보장
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";  -- uuid_generate_v4() 대안 제공
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";  -- uuid_generate_v4() 대안
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";    -- 유사 문자열 검색 (자동완성, 오타 허용)
 CREATE EXTENSION IF NOT EXISTS "pg_cron";    -- Materialized View 주기적 갱신 스케줄러
 
 -- ============================================================
---  1. ENUM 타입 정의
---     ALTER TYPE ... ADD VALUE 로 값 추가 가능 (단, 삭제는 불가).
+--  1. ENUM 타입 정의 (메인 도메인)
 -- ============================================================
 
 DO $$ BEGIN
@@ -65,6 +71,42 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
     CREATE TYPE penalty_type_t       AS ENUM ('warning', 'suspend', 'ban');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 도서/기기 매물 상세 상태용 ENUM
+DO $$ BEGIN
+    CREATE TYPE book_mark_t   AS ENUM ('none', 'pencil', 'pen');
+    -- '없음' / '연필/샤프' / '볼펜/형광펜'
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE book_cover_t  AS ENUM ('clean', 'not_clean');
+    -- '깨끗함' / '깨끗하지 않음'
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE yes_no_t      AS ENUM ('yes', 'no');
+    -- '있음' / '없음'
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE grade_hml_t   AS ENUM ('high', 'mid', 'low');
+    -- '상' / '중' / '하'
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE device_op_t   AS ENUM ('normal', 'partial_issue');
+    -- '정상 작동' / '일부 문제 있음'
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE included_t    AS ENUM ('included', 'not_included');
+    -- '포함' / '미포함'
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE accessories_t AS ENUM ('body_only', 'case_included', 'manual_included');
+    -- '본체만' / '케이스 포함' / '설명서 포함'
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============================================================
@@ -85,8 +127,6 @@ $$;
 -- ============================================================
 --  3. Supabase Auth 연동 트리거 함수
 --     auth.users 에 새 계정 생성 시 public.users 프로필을 자동 생성.
---     nickname / student_id / school_domain 은 가입 시 raw_user_meta_data 에서 추출.
---     예) supabase.auth.signUp({ email, password, options: { data: { nickname, student_id, school_domain } } })
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION fn_on_auth_user_created()
@@ -108,7 +148,6 @@ BEGIN
 END;
 $$;
 
--- auth.users INSERT 시 트리거 등록
 DROP TRIGGER IF EXISTS trg_on_auth_user_created ON auth.users;
 CREATE TRIGGER trg_on_auth_user_created
     AFTER INSERT ON auth.users
@@ -131,7 +170,6 @@ COMMENT ON TABLE  regions           IS '지역 마스터 — 정밀 좌표 대�
 COMMENT ON COLUMN regions.region_id IS '지역 ID (PK, Auto Identity)';
 COMMENT ON COLUMN regions.name      IS '지역명';
 
--- RLS
 ALTER TABLE regions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "regions: 인증 사용자 읽기 허용"
@@ -140,16 +178,39 @@ CREATE POLICY "regions: 인증 사용자 읽기 허용"
     USING (true);
 
 -- ============================================================
---  5. users  (Supabase Auth 연동 프로필 테이블)
---     - uid 는 auth.users(id) 를 참조 → Supabase Auth 가 인증 담당
---     - password_hash 제거 (인증은 Supabase Auth 위임)
---     - 회원가입 시 fn_on_auth_user_created 트리거가 행 자동 생성
+--  5. majors  (전공/학과 마스터)
+--     users.major_id FK 참조 — users 보다 먼저 정의해야 함.
+-- ============================================================
+
+DROP TABLE IF EXISTS majors CASCADE;
+
+CREATE TABLE majors (
+    major_id    INTEGER         GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name        VARCHAR(100)    NOT NULL,
+    college     VARCHAR(100)    NULL,
+
+    CONSTRAINT uq_majors_name UNIQUE (name)
+);
+
+COMMENT ON TABLE  majors         IS '전공/학과 마스터';
+COMMENT ON COLUMN majors.name    IS '전공명 (예: 컴퓨터학과)';
+COMMENT ON COLUMN majors.college IS '단과대학명 (예: 정보대학)';
+
+ALTER TABLE majors ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "majors: 전체 공개 읽기"
+    ON majors FOR SELECT USING (true);
+
+-- ============================================================
+--  6. users  (Supabase Auth 연동 프로필 테이블)
+--     - uid 는 auth.users(id) 참조 → Supabase Auth 가 인증 담당
+--     - major_id / grade : 학과/학년 정보 (FK → majors)
 -- ============================================================
 
 DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users (
-    uid                 UUID            NOT NULL DEFAULT gen_random_uuid(),
+    uid                 UUID            NOT NULL,
     email               VARCHAR(255)    NOT NULL,
     nickname            VARCHAR(50)     NOT NULL,
     student_id          VARCHAR(20)     NOT NULL DEFAULT '',
@@ -157,12 +218,15 @@ CREATE TABLE users (
     profile_image_url   TEXT            NULL,
     bio                 TEXT            NULL,
     preferred_region_id INTEGER         NULL,
+    major_id            INTEGER         NULL,                       -- 소속 전공
+    grade               SMALLINT        NULL,                       -- 학년 1~4
     joined_at           TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     manner_temperature  NUMERIC(5,2)    NOT NULL DEFAULT 36.50,
     trade_count         INTEGER         NOT NULL DEFAULT 0,
     is_suspended        BOOLEAN         NOT NULL DEFAULT FALSE,
     warning_count       INTEGER         NOT NULL DEFAULT 0,
     deleted_at          TIMESTAMPTZ     NULL,
+    onboarding_completed BOOLEAN        NOT NULL DEFAULT FALSE,     -- 교환학생 온보딩 완료 여부
 
     CONSTRAINT pk_users                PRIMARY KEY (uid),
     CONSTRAINT uq_users_email          UNIQUE      (email),
@@ -170,6 +234,7 @@ CREATE TABLE users (
     CONSTRAINT chk_users_manner        CHECK       (manner_temperature BETWEEN 0 AND 100),
     CONSTRAINT chk_users_trade_count   CHECK       (trade_count   >= 0),
     CONSTRAINT chk_users_warning_count CHECK       (warning_count >= 0),
+    CONSTRAINT chk_users_grade         CHECK       (grade IS NULL OR grade BETWEEN 1 AND 4),
     CONSTRAINT fk_users_auth
         FOREIGN KEY (uid)
         REFERENCES  auth.users (id)
@@ -178,22 +243,29 @@ CREATE TABLE users (
         FOREIGN KEY (preferred_region_id)
         REFERENCES  regions (region_id)
         ON DELETE SET NULL
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_users_major
+        FOREIGN KEY (major_id)
+        REFERENCES  majors (major_id)
+        ON DELETE SET NULL
         ON UPDATE RESTRICT
 );
 
 CREATE INDEX idx_users_active_email    ON users (email)    WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_active_nickname ON users (nickname) WHERE deleted_at IS NULL;
+CREATE INDEX idx_users_major           ON users (major_id) WHERE deleted_at IS NULL;
 
 COMMENT ON TABLE  users                    IS '플랫폼 회원 프로필 — auth.users 연동, Soft Delete(deleted_at) 적용';
 COMMENT ON COLUMN users.uid                IS 'auth.users(id) 참조 UUID (PK) — Supabase Auth 계정과 1:1';
 COMMENT ON COLUMN users.email              IS '학교 이메일 (PII — 앱 레이어 암호화 권장)';
 COMMENT ON COLUMN users.student_id         IS '학번 (PII — 앱 레이어 암호화 권장)';
 COMMENT ON COLUMN users.school_domain      IS '학교 도메인 예: snu.ac.kr';
+COMMENT ON COLUMN users.major_id           IS 'FK → majors(major_id), 소속 전공';
+COMMENT ON COLUMN users.grade              IS '학년 1~4 (NULL 허용 — 교환학생/기타)';
 COMMENT ON COLUMN users.manner_temperature IS '매너 온도 0.00~100.00, 기본값 36.50';
 COMMENT ON COLUMN users.is_suspended       IS '이용 정지 여부 (TRUE=정지)';
 COMMENT ON COLUMN users.deleted_at         IS 'Soft Delete 시각 — NULL 이면 활성 계정';
 
--- RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "users: 인증 사용자 프로필 읽기"
@@ -213,7 +285,7 @@ CREATE POLICY "users: 본인 프로필 수정"
     WITH CHECK (uid = auth.uid());
 
 -- ============================================================
---  6. categories
+--  7. categories (상품 카테고리)
 -- ============================================================
 
 DROP TABLE IF EXISTS categories CASCADE;
@@ -233,15 +305,13 @@ CREATE TABLE categories (
 COMMENT ON TABLE  categories           IS '상품 카테고리 — parent_id 자기 참조로 계층 구조';
 COMMENT ON COLUMN categories.parent_id IS 'FK → categories(category_id), 최상위면 NULL';
 
--- RLS
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "categories: 전체 공개 읽기"
-    ON categories FOR SELECT
-    USING (true);
+    ON categories FOR SELECT USING (true);
 
 -- ============================================================
---  7. products
+--  8. products
 -- ============================================================
 
 DROP TABLE IF EXISTS products CASCADE;
@@ -292,12 +362,10 @@ COMMENT ON COLUMN products.view_count  IS '상품 조회수 — Redis 없이 Pos
 COMMENT ON COLUMN products.updated_at  IS '최종 수정 시각 — trg_products_updated_at 트리거로 자동 갱신';
 COMMENT ON COLUMN products.deleted_at  IS 'Soft Delete 시각 — NULL 이면 공개 게시물';
 
--- RLS
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "products: 활성 상품 전체 공개 읽기"
-    ON products FOR SELECT
-    USING (deleted_at IS NULL);
+    ON products FOR SELECT USING (deleted_at IS NULL);
 
 CREATE POLICY "products: 인증 사용자 상품 등록"
     ON products FOR INSERT
@@ -310,8 +378,6 @@ CREATE POLICY "products: 판매자 본인 상품 수정"
     USING (seller_uid = auth.uid() AND deleted_at IS NULL)
     WITH CHECK (seller_uid = auth.uid());
 
--- Full-Text Search 인덱스 (pg_trgm 기반 — 한국어 포함 유사 검색)
--- to_tsvector 'simple' 설정은 언어 무관 토큰화 (한국어 형태소는 앱 레이어 전처리 권장)
 CREATE INDEX idx_products_fts_title
     ON products USING GIN (to_tsvector('simple', title))
     WHERE deleted_at IS NULL;
@@ -320,13 +386,12 @@ CREATE INDEX idx_products_fts_desc
     ON products USING GIN (to_tsvector('simple', COALESCE(description, '')))
     WHERE deleted_at IS NULL;
 
--- pg_trgm: 자동완성·오타 허용 검색 (SIMILARITY 함수 활용)
 CREATE INDEX idx_products_trgm_title
     ON products USING GIN (title gin_trgm_ops)
     WHERE deleted_at IS NULL;
 
 -- ============================================================
---  8. product_images
+--  9. product_images
 -- ============================================================
 
 DROP TABLE IF EXISTS product_images CASCADE;
@@ -350,12 +415,10 @@ CREATE INDEX idx_product_images_pid ON product_images (pid);
 COMMENT ON TABLE  product_images               IS '상품 이미지 — Supabase Storage URL 참조';
 COMMENT ON COLUMN product_images.display_order IS '이미지 표시 순서 (0부터 시작)';
 
--- RLS
 ALTER TABLE product_images ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "product_images: 전체 공개 읽기"
-    ON product_images FOR SELECT
-    USING (true);
+    ON product_images FOR SELECT USING (true);
 
 CREATE POLICY "product_images: 판매자 본인 상품 이미지 등록"
     ON product_images FOR INSERT
@@ -380,7 +443,129 @@ CREATE POLICY "product_images: 판매자 본인 상품 이미지 삭제"
     );
 
 -- ============================================================
---  9. wishlists
+--  10. book_conditions  (도서 매물 상세 상태 — products 1:0..1)
+-- ============================================================
+
+DROP TABLE IF EXISTS book_conditions CASCADE;
+
+CREATE TABLE book_conditions (
+    pid              UUID          NOT NULL,
+    underline_mark   book_mark_t   NOT NULL,    -- 밑줄
+    handwriting      book_mark_t   NOT NULL,    -- 필기
+    cover_state      book_cover_t  NOT NULL,    -- 표지 상태
+    name_written     yes_no_t      NOT NULL,    -- 이름 기재 여부
+    discoloration    yes_no_t      NOT NULL,    -- 변색
+    page_damage      yes_no_t      NOT NULL,    -- 페이지 손상
+
+    CONSTRAINT pk_book_conditions PRIMARY KEY (pid),
+    CONSTRAINT fk_book_conditions_product
+        FOREIGN KEY (pid)
+        REFERENCES  products (pid)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT
+);
+
+COMMENT ON TABLE  book_conditions                IS '도서 매물 상세 상태 — products 1:0..1';
+COMMENT ON COLUMN book_conditions.underline_mark IS 'ENUM book_mark_t: none | pencil | pen';
+COMMENT ON COLUMN book_conditions.cover_state    IS 'ENUM book_cover_t: clean | not_clean';
+
+ALTER TABLE book_conditions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "book_conditions: 전체 공개 읽기"
+    ON book_conditions FOR SELECT USING (true);
+
+CREATE POLICY "book_conditions: 판매자 본인 등록"
+    ON book_conditions FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.pid = book_conditions.pid
+              AND p.seller_uid = auth.uid()
+        )
+    );
+
+CREATE POLICY "book_conditions: 판매자 본인 수정"
+    ON book_conditions FOR UPDATE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.pid = book_conditions.pid
+              AND p.seller_uid = auth.uid()
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.pid = book_conditions.pid
+              AND p.seller_uid = auth.uid()
+        )
+    );
+
+-- ============================================================
+--  11. device_conditions  (기기 매물 상세 상태 — products 1:0..1)
+-- ============================================================
+
+DROP TABLE IF EXISTS device_conditions CASCADE;
+
+CREATE TABLE device_conditions (
+    pid               UUID            NOT NULL,
+    usage_wear        grade_hml_t     NOT NULL,    -- 사용 마모도 상/중/하
+    cleanliness       grade_hml_t     NOT NULL,    -- 청결도 상/중/하
+    operation_status  device_op_t     NOT NULL,    -- 작동 상태
+    battery_included  included_t      NOT NULL,    -- 배터리 포함 여부
+    accessories       accessories_t   NOT NULL,    -- 구성품
+
+    CONSTRAINT pk_device_conditions PRIMARY KEY (pid),
+    CONSTRAINT fk_device_conditions_product
+        FOREIGN KEY (pid)
+        REFERENCES  products (pid)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT
+);
+
+COMMENT ON TABLE  device_conditions                  IS '기기 매물 상세 상태 — products 1:0..1';
+COMMENT ON COLUMN device_conditions.usage_wear        IS 'ENUM grade_hml_t: high | mid | low';
+COMMENT ON COLUMN device_conditions.operation_status  IS 'ENUM device_op_t: normal | partial_issue';
+COMMENT ON COLUMN device_conditions.accessories       IS 'ENUM accessories_t: body_only | case_included | manual_included';
+
+ALTER TABLE device_conditions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "device_conditions: 전체 공개 읽기"
+    ON device_conditions FOR SELECT USING (true);
+
+CREATE POLICY "device_conditions: 판매자 본인 등록"
+    ON device_conditions FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.pid = device_conditions.pid
+              AND p.seller_uid = auth.uid()
+        )
+    );
+
+CREATE POLICY "device_conditions: 판매자 본인 수정"
+    ON device_conditions FOR UPDATE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.pid = device_conditions.pid
+              AND p.seller_uid = auth.uid()
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM products p
+            WHERE p.pid = device_conditions.pid
+              AND p.seller_uid = auth.uid()
+        )
+    );
+
+-- ============================================================
+--  12. wishlists
 -- ============================================================
 
 DROP TABLE IF EXISTS wishlists CASCADE;
@@ -406,7 +591,6 @@ CREATE TABLE wishlists (
 
 COMMENT ON TABLE wishlists IS '찜 목록 — users ↔ products M:N 중간 테이블';
 
--- RLS
 ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "wishlists: 본인 찜 목록만 접근"
@@ -416,28 +600,31 @@ CREATE POLICY "wishlists: 본인 찜 목록만 접근"
     WITH CHECK (uid = auth.uid());
 
 -- ============================================================
---  10. chat_rooms
+--  13. chat_rooms
 -- ============================================================
 
 DROP TABLE IF EXISTS chat_rooms CASCADE;
 
 CREATE TABLE chat_rooms (
-    room_id     BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    product_id  UUID        NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    room_id           BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_id        UUID        NULL,        -- 일반 채팅방 (교환학생 채팅은 NULL)
+    package_match_id  BIGINT      NULL,        -- 교환학생 패키지 채팅방 (일반 채팅은 NULL)
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_chat_rooms_product
         FOREIGN KEY (product_id)
         REFERENCES  products (pid)
         ON DELETE RESTRICT
         ON UPDATE RESTRICT
+    -- fk_chat_rooms_package_match 는 package_matches 생성 후 추가
 );
 
 CREATE INDEX idx_chat_rooms_product ON chat_rooms (product_id);
 
-COMMENT ON TABLE chat_rooms IS '채팅방 — 상품 1개당 구매 희망자별 채팅방 생성';
+COMMENT ON TABLE  chat_rooms                  IS '채팅방 — 일반(product_id) 또는 교환학생 패키지(package_match_id)';
+COMMENT ON COLUMN chat_rooms.product_id       IS '일반 채팅방 연결 상품 — 교환학생 채팅은 NULL';
+COMMENT ON COLUMN chat_rooms.package_match_id IS '교환학생 패키지 매칭 연결 — 일반 채팅은 NULL';
 
--- RLS
 ALTER TABLE chat_rooms ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "chat_rooms: 참여 중인 채팅방만 읽기"
@@ -457,8 +644,7 @@ CREATE POLICY "chat_rooms: 인증 사용자 채팅방 생성"
     WITH CHECK (true);
 
 -- ============================================================
---  11. chat_participants
---      last_read_at: 읽음 확인 기능
+--  14. chat_participants
 -- ============================================================
 
 DROP TABLE IF EXISTS chat_participants CASCADE;
@@ -485,7 +671,6 @@ CREATE TABLE chat_participants (
 COMMENT ON TABLE  chat_participants              IS '채팅방 참여자';
 COMMENT ON COLUMN chat_participants.last_read_at IS '마지막 읽음 시각 — NULL 이면 한 번도 읽지 않음';
 
--- RLS
 ALTER TABLE chat_participants ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "chat_participants: 같은 방 참여자만 읽기"
@@ -511,9 +696,7 @@ CREATE POLICY "chat_participants: 본인 읽음 시각 갱신"
     WITH CHECK (uid = auth.uid());
 
 -- ============================================================
---  12. transactions
---      - agreed_price: 거래 확정 시점 가격 스냅샷
---      - buyer_uid ≠ seller_uid: CHECK 로 자기 거래 방지
+--  15. transactions
 -- ============================================================
 
 DROP TABLE IF EXISTS transactions CASCADE;
@@ -554,7 +737,6 @@ COMMENT ON TABLE  transactions              IS '거래 내역 — ACID 보장 �
 COMMENT ON COLUMN transactions.agreed_price IS '거래 확정 가격 스냅샷 — products.price 변경과 무관';
 COMMENT ON COLUMN transactions.status       IS 'ENUM transaction_status_t: pending | completed | cancelled';
 
--- RLS
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "transactions: 구매자 또는 판매자만 읽기"
@@ -573,8 +755,7 @@ CREATE POLICY "transactions: 관련 당사자 상태 변경"
     USING (buyer_uid = auth.uid() OR seller_uid = auth.uid());
 
 -- ============================================================
---  13. reviews
---      UNIQUE (transaction_id, reviewer_uid): 동일 거래 중복 후기 방지
+--  16. reviews
 -- ============================================================
 
 DROP TABLE IF EXISTS reviews CASCADE;
@@ -613,12 +794,10 @@ CREATE INDEX idx_reviews_reviewee ON reviews (reviewee_uid);
 COMMENT ON TABLE  reviews        IS '거래 후기 — 거래당 작성자 1인 1건';
 COMMENT ON COLUMN reviews.rating IS '별점 1~5';
 
--- RLS
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "reviews: 전체 공개 읽기"
-    ON reviews FOR SELECT
-    USING (true);
+    ON reviews FOR SELECT USING (true);
 
 CREATE POLICY "reviews: 거래 당사자 후기 작성"
     ON reviews FOR INSERT
@@ -634,7 +813,7 @@ CREATE POLICY "reviews: 거래 당사자 후기 작성"
     );
 
 -- ============================================================
---  14. manner_keywords
+--  17. manner_keywords
 -- ============================================================
 
 DROP TABLE IF EXISTS manner_keywords CASCADE;
@@ -648,16 +827,13 @@ CREATE TABLE manner_keywords (
 
 COMMENT ON TABLE manner_keywords IS '매너 키워드 마스터 — 관리자 사전 정의';
 
--- RLS
 ALTER TABLE manner_keywords ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "manner_keywords: 전체 공개 읽기"
-    ON manner_keywords FOR SELECT
-    USING (true);
+    ON manner_keywords FOR SELECT USING (true);
 
 -- ============================================================
---  15. review_keywords
---      reviews ↔ manner_keywords M:N 중간 테이블
+--  18. review_keywords
 -- ============================================================
 
 DROP TABLE IF EXISTS review_keywords CASCADE;
@@ -681,12 +857,10 @@ CREATE TABLE review_keywords (
 
 COMMENT ON TABLE review_keywords IS '후기-매너키워드 연결 (M:N) — 복합 PK';
 
--- RLS
 ALTER TABLE review_keywords ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "review_keywords: 전체 공개 읽기"
-    ON review_keywords FOR SELECT
-    USING (true);
+    ON review_keywords FOR SELECT USING (true);
 
 CREATE POLICY "review_keywords: 후기 작성자 키워드 등록"
     ON review_keywords FOR INSERT
@@ -700,9 +874,7 @@ CREATE POLICY "review_keywords: 후기 작성자 키워드 등록"
     );
 
 -- ============================================================
---  16. reports
---      - reporter ≠ target: 자기 신고 방지 CHECK
---      - 법적 증거 자료로 물리 삭제 금지
+--  19. reports
 -- ============================================================
 
 DROP TABLE IF EXISTS reports CASCADE;
@@ -733,7 +905,6 @@ CREATE INDEX idx_reports_reporter_target ON reports (reporter_uid, target_uid);
 COMMENT ON TABLE  reports              IS '신고 내역 — 법적 증거 자료로 물리 삭제 금지';
 COMMENT ON COLUMN reports.reporter_uid IS '신고자 UUID — 앱 레이어에서 익명 처리, DB에는 기록 유지';
 
--- RLS
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "reports: 신고자 본인 신고 내역 읽기"
@@ -747,7 +918,7 @@ CREATE POLICY "reports: 인증 사용자 신고 등록"
     WITH CHECK (reporter_uid = auth.uid());
 
 -- ============================================================
---  17. report_evidences
+--  20. report_evidences
 -- ============================================================
 
 DROP TABLE IF EXISTS report_evidences CASCADE;
@@ -768,7 +939,6 @@ CREATE INDEX idx_report_evidences_report ON report_evidences (report_id);
 
 COMMENT ON TABLE report_evidences IS '신고 증거 이미지 — Supabase Storage URL 참조';
 
--- RLS
 ALTER TABLE report_evidences ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "report_evidences: 신고자 본인만 읽기/등록"
@@ -790,9 +960,7 @@ CREATE POLICY "report_evidences: 신고자 본인만 읽기/등록"
     );
 
 -- ============================================================
---  18. user_penalties
---      expires_at = NULL → 영구 제재(ban)
---      법적 증거 자료로서 물리 삭제 금지
+--  21. user_penalties
 -- ============================================================
 
 DROP TABLE IF EXISTS user_penalties CASCADE;
@@ -817,7 +985,6 @@ COMMENT ON TABLE  user_penalties            IS '사용자 제재 이력 — 물�
 COMMENT ON COLUMN user_penalties.type       IS 'ENUM penalty_type_t: warning | suspend | ban';
 COMMENT ON COLUMN user_penalties.expires_at IS '제재 만료 시각 — NULL 이면 영구 정지(ban)';
 
--- RLS
 ALTER TABLE user_penalties ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "user_penalties: 본인 제재 이력 읽기"
@@ -826,21 +993,22 @@ CREATE POLICY "user_penalties: 본인 제재 이력 읽기"
     USING (uid = auth.uid());
 
 -- ============================================================
---  19. chat_messages  (MongoDB 대체 — JSONB 하이브리드 구조)
---      - room_id / sender_uid / created_at : 컬럼 (필터·JOIN 대상)
---      - type / content / image_url / is_deleted : JSONB data 필드
---      - last_read_at 비교: ChatParticipant.last_read_at < created_at
---        → 안 읽은 메시지 수 산출
+--  22. chat_messages  (MongoDB 대체 — JSONB 하이브리드 구조)
 -- ============================================================
 
 DROP TABLE IF EXISTS chat_messages CASCADE;
 
 CREATE TABLE chat_messages (
-    id          BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    room_id     BIGINT      NOT NULL,
-    sender_uid  UUID        NOT NULL,
-    data        JSONB       NOT NULL DEFAULT '{}',
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    id               BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    room_id          BIGINT      NOT NULL,
+    sender_uid       UUID        NOT NULL,
+    data             JSONB       NOT NULL DEFAULT '{}',
+    -- 교환학생 파트 추가: 번역 채팅
+    original_text    TEXT        NULL,    -- 발신자 원문
+    translated_text  TEXT        NULL,    -- DeepL 번역 결과 (실패 시 NULL)
+    source_lang      VARCHAR(10) NULL,    -- 원문 언어 (예: 'ko')
+    target_lang      VARCHAR(10) NULL,    -- 번역 대상 언어 (예: 'en')
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT chk_chat_messages_type CHECK (
         data->>'type' IN ('text', 'image', 'system')
@@ -857,16 +1025,13 @@ CREATE TABLE chat_messages (
         ON UPDATE RESTRICT
 );
 
--- 채팅방별 시간순 조회 (가장 빈번한 쿼리 패턴)
 CREATE INDEX idx_chat_messages_room_created ON chat_messages (room_id, created_at DESC);
--- JSONB 내부 필드 검색 (메시지 내용 검색 등)
-CREATE INDEX idx_chat_messages_data ON chat_messages USING GIN (data);
+CREATE INDEX idx_chat_messages_data         ON chat_messages USING GIN (data);
 
 COMMENT ON TABLE  chat_messages            IS '채팅 메시지 — MongoDB 대체, JSONB 하이브리드 구조';
 COMMENT ON COLUMN chat_messages.data       IS 'JSONB: { type, content, image_url, is_deleted } — type: text|image|system';
 COMMENT ON COLUMN chat_messages.created_at IS '전송 시각 — ChatParticipant.last_read_at 과 비교해 미읽음 수 산출';
 
--- RLS
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "chat_messages: 채팅방 참여자만 읽기"
@@ -899,10 +1064,7 @@ CREATE POLICY "chat_messages: 발신자 본인 메시지 수정(Soft Delete)"
     WITH CHECK (sender_uid = auth.uid());
 
 -- ============================================================
---  20. audit_logs  (감사 로그 — 파티셔닝으로 대용량 처리)
---      - 월별 RANGE 파티셔닝 (created_at 기준)
---      - 물리 삭제 금지 (법적 증거 자료)
---      - RLS 없음 — 서비스 계정(service_role)만 접근
+--  23. audit_logs  (감사 로그 — 파티셔닝)
 -- ============================================================
 
 DROP TABLE IF EXISTS audit_logs CASCADE;
@@ -916,7 +1078,6 @@ CREATE TABLE audit_logs (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ) PARTITION BY RANGE (created_at);
 
--- 초기 파티션 (2026년)
 CREATE TABLE audit_logs_2026_05 PARTITION OF audit_logs
     FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
 CREATE TABLE audit_logs_2026_06 PARTITION OF audit_logs
@@ -932,23 +1093,606 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
 COMMENT ON TABLE  audit_logs            IS '감사 로그 — 월별 파티셔닝, service_role 전용, 물리 삭제 금지';
 COMMENT ON COLUMN audit_logs.action     IS '이벤트 유형: LOGIN | SIGNUP | REPORT | PENALTY | PRODUCT_DELETE 등';
 COMMENT ON COLUMN audit_logs.ip_address IS 'PostgreSQL INET 타입 — IPv4/IPv6 모두 지원';
-COMMENT ON COLUMN audit_logs.metadata  IS 'JSONB: 이벤트별 컨텍스트 (device, user_agent, target_uid 등)';
+COMMENT ON COLUMN audit_logs.metadata   IS 'JSONB: 이벤트별 컨텍스트 (device, user_agent, target_uid 등)';
 
 -- ============================================================
---  21. Supabase Realtime 활성화
---      채팅 관련 테이블에 Realtime 구독을 활성화.
---      클라이언트: supabase.channel('...').on('postgres_changes', ...) 으로 구독.
+--  [수강/추천 파트] ENUM 추가
+-- ============================================================
+
+DO $$ BEGIN
+    CREATE TYPE course_category_t AS ENUM ('major', 'liberal', 'teaching');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE day_of_week_t AS ENUM ('MON', 'TUE', 'WED', 'THU', 'FRI');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE item_category_type_t AS ENUM ('BOOK', 'DEVICE', 'ETC');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+--  [수강/추천 파트] 24. courses  (개설 과목)
+-- ============================================================
+
+DROP TABLE IF EXISTS courses CASCADE;
+
+CREATE TABLE courses (
+    course_id      BIGINT             GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    course_code    VARCHAR(20)        NOT NULL,
+    name           VARCHAR(100)       NOT NULL,
+    professor      VARCHAR(50)        NULL,
+    credit         SMALLINT           NULL,
+    grade_level    SMALLINT           NULL,
+    category_type  course_category_t  NOT NULL,
+    major_id       INTEGER            NULL,    -- 전공 과목일 때만
+    liberal_area   VARCHAR(50)        NULL,    -- 교양 과목일 때만
+
+    CONSTRAINT chk_courses_credit
+        CHECK (credit IS NULL OR credit BETWEEN 0 AND 10),
+    CONSTRAINT chk_courses_grade_level
+        CHECK (grade_level IS NULL OR grade_level BETWEEN 1 AND 4),
+    CONSTRAINT fk_courses_major
+        FOREIGN KEY (major_id)
+        REFERENCES  majors (major_id)
+        ON DELETE SET NULL
+        ON UPDATE RESTRICT
+);
+
+CREATE INDEX idx_courses_code      ON courses (course_code);
+CREATE INDEX idx_courses_name      ON courses (name);
+CREATE INDEX idx_courses_professor ON courses (professor);
+CREATE INDEX idx_courses_major     ON courses (major_id);
+CREATE INDEX idx_courses_trgm_name ON courses USING GIN (name gin_trgm_ops);
+
+COMMENT ON TABLE  courses               IS '개설 과목 — 과목 추가창 검색 대상';
+COMMENT ON COLUMN courses.course_code   IS '과목코드 (예: CSE3010)';
+COMMENT ON COLUMN courses.category_type IS 'ENUM: major | liberal | teaching';
+COMMENT ON COLUMN courses.liberal_area  IS '교양 영역 — category_type=liberal 일 때만';
+
+ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "courses: 전체 공개 읽기"
+    ON courses FOR SELECT USING (true);
+
+-- ============================================================
+--  [수강/추천 파트] 25. course_schedules  (과목 시간표)
+-- ============================================================
+
+DROP TABLE IF EXISTS course_schedules CASCADE;
+
+CREATE TABLE course_schedules (
+    schedule_id   BIGINT          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    course_id     BIGINT          NOT NULL,
+    day_of_week   day_of_week_t   NOT NULL,
+    start_time    TIME            NOT NULL,
+    end_time      TIME            NOT NULL,
+
+    CONSTRAINT chk_course_schedules_time CHECK (start_time < end_time),
+    CONSTRAINT fk_course_schedules_course
+        FOREIGN KEY (course_id)
+        REFERENCES  courses (course_id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT
+);
+
+CREATE INDEX idx_course_schedules_course ON course_schedules (course_id);
+CREATE INDEX idx_course_schedules_day    ON course_schedules (day_of_week, start_time);
+
+COMMENT ON TABLE  course_schedules             IS '과목 시간표 — 한 과목이 여러 시간대 가능 (1:N)';
+COMMENT ON COLUMN course_schedules.day_of_week IS 'ENUM: MON ~ FRI';
+
+ALTER TABLE course_schedules ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "course_schedules: 전체 공개 읽기"
+    ON course_schedules FOR SELECT USING (true);
+
+-- ============================================================
+--  [수강/추천 파트] 26. user_courses  (수강 등록 — N:M)
+--     PK: (uid, course_id, semester) — 같은 학기 중복 등록 방지
+-- ============================================================
+
+DROP TABLE IF EXISTS user_courses CASCADE;
+
+CREATE TABLE user_courses (
+    uid         UUID         NOT NULL,
+    course_id   BIGINT       NOT NULL,
+    semester    VARCHAR(10)  NOT NULL,    -- 예: '2026-1'
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_user_courses PRIMARY KEY (uid, course_id, semester),
+    CONSTRAINT fk_user_courses_user
+        FOREIGN KEY (uid)
+        REFERENCES  users (uid)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_user_courses_course
+        FOREIGN KEY (course_id)
+        REFERENCES  courses (course_id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT
+);
+
+CREATE INDEX idx_user_courses_uid      ON user_courses (uid);
+CREATE INDEX idx_user_courses_semester ON user_courses (semester);
+
+COMMENT ON TABLE  user_courses          IS '사용자 수강 등록 (N:M) — [과목 추가하기] 결과';
+COMMENT ON COLUMN user_courses.semester IS '학기 (예: 2026-1)';
+
+ALTER TABLE user_courses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "user_courses: 본인 수강 목록 접근"
+    ON user_courses FOR ALL
+    TO authenticated
+    USING (uid = auth.uid())
+    WITH CHECK (uid = auth.uid());
+
+-- ============================================================
+--  [수강/추천 파트] 27. item_categories  (추천 물품 카테고리)
+--     기존 categories(상품 카테고리)와 별도 — 의미·생명주기가 다름
+-- ============================================================
+
+DROP TABLE IF EXISTS item_categories CASCADE;
+
+CREATE TABLE item_categories (
+    item_category_id  BIGINT                GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name              VARCHAR(100)          NOT NULL,
+    type              item_category_type_t  NOT NULL,
+    description       TEXT                  NULL,
+
+    CONSTRAINT uq_item_categories_name UNIQUE (name)
+);
+
+CREATE INDEX idx_item_categories_type ON item_categories (type);
+
+COMMENT ON TABLE  item_categories      IS '추천 물품 카테고리 — 기존 categories(상품용)와 분리';
+COMMENT ON COLUMN item_categories.type IS 'ENUM: BOOK | DEVICE | ETC';
+
+ALTER TABLE item_categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "item_categories: 전체 공개 읽기"
+    ON item_categories FOR SELECT USING (true);
+
+-- ============================================================
+--  [수강/추천 파트] 28. course_recommendations
+-- ============================================================
+
+DROP TABLE IF EXISTS course_recommendations CASCADE;
+
+CREATE TABLE course_recommendations (
+    rec_id            BIGINT          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    course_id         BIGINT          NOT NULL,
+    item_category_id  BIGINT          NOT NULL,
+    reason_template   VARCHAR(255)    NULL,
+    priority          INTEGER         NOT NULL DEFAULT 0,
+
+    CONSTRAINT uq_course_rec UNIQUE (course_id, item_category_id),
+    CONSTRAINT fk_course_rec_course
+        FOREIGN KEY (course_id)
+        REFERENCES  courses (course_id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_course_rec_item_category
+        FOREIGN KEY (item_category_id)
+        REFERENCES  item_categories (item_category_id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT
+);
+
+CREATE INDEX idx_course_rec_course   ON course_recommendations (course_id);
+CREATE INDEX idx_course_rec_priority ON course_recommendations (priority DESC);
+
+COMMENT ON TABLE  course_recommendations                 IS '과목 ↔ 추천 카테고리 매핑 규칙';
+COMMENT ON COLUMN course_recommendations.reason_template IS '추천 이유 템플릿 (예: "{course_name} 수강자에게 추천")';
+COMMENT ON COLUMN course_recommendations.priority        IS '정렬 가중치 (높을수록 우선)';
+
+ALTER TABLE course_recommendations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "course_recommendations: 전체 공개 읽기"
+    ON course_recommendations FOR SELECT USING (true);
+
+-- ============================================================
+--  [교환학생 파트] ENUM 추가
+-- ============================================================
+
+DO $$ BEGIN
+    CREATE TYPE housing_type_t  AS ENUM ('dorm', 'flat');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE exchange_role_t AS ENUM ('incoming', 'outgoing');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE match_status_t  AS ENUM ('pending', 'matched', 'completed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE cert_status_t   AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+--  [교환학생 파트] 29. countries
+-- ============================================================
+
+DROP TABLE IF EXISTS countries CASCADE;
+
+CREATE TABLE countries (
+    country_id    INTEGER      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    country_code  VARCHAR(10)  NOT NULL,
+    name_ko       VARCHAR(100) NOT NULL,
+    name_en       VARCHAR(100) NOT NULL,
+    region_group  VARCHAR(10)  NOT NULL,
+
+    CONSTRAINT uq_countries_code UNIQUE (country_code)
+);
+
+COMMENT ON TABLE  countries              IS '국가/지역 마스터 — 23개 지역 그룹 코드 기반';
+COMMENT ON COLUMN countries.country_code IS '지역 그룹 코드 (예: E1=영어권유럽, A1-C=일본중부, N1-W=미국서부)';
+COMMENT ON COLUMN countries.region_group IS '패키지 추천 필터 기준';
+
+ALTER TABLE countries ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "countries: 전체 공개 읽기"
+    ON countries FOR SELECT USING (true);
+
+-- ============================================================
+--  [교환학생 파트] 30. exchange_students
+-- ============================================================
+
+DROP TABLE IF EXISTS exchange_students CASCADE;
+
+CREATE TABLE exchange_students (
+    uid                   UUID             NOT NULL,
+    country_id            INTEGER          NULL,
+    region_group          VARCHAR(10)      NULL,
+    housing_type          housing_type_t   NULL,
+    semester              VARCHAR(20)      NULL,
+    language_pref         VARCHAR(5)       NOT NULL DEFAULT 'ko',
+    role                  exchange_role_t  NULL,
+    onboarding_completed  BOOLEAN          NOT NULL DEFAULT FALSE,
+    metadata              JSONB            NOT NULL DEFAULT '{}',
+    created_at            TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+    updated_at            TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_exchange_students PRIMARY KEY (uid),
+    CONSTRAINT fk_exchange_students_user
+        FOREIGN KEY (uid)
+        REFERENCES  users (uid)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_exchange_students_country
+        FOREIGN KEY (country_id)
+        REFERENCES  countries (country_id)
+        ON DELETE SET NULL
+        ON UPDATE RESTRICT
+);
+
+CREATE TRIGGER trg_exchange_students_updated_at
+    BEFORE UPDATE ON exchange_students
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+COMMENT ON TABLE  exchange_students                      IS '교환학생 프로필 — users 1:1 확장';
+COMMENT ON COLUMN exchange_students.region_group         IS 'countries.region_group 비정규화 — 패키지 추천 필터 효율화';
+COMMENT ON COLUMN exchange_students.language_pref        IS 'UI 언어 설정 ko(한국어) | en(영어)';
+COMMENT ON COLUMN exchange_students.onboarding_completed IS '온보딩 4단계 완료 여부';
+COMMENT ON COLUMN exchange_students.metadata             IS 'JSONB: 비정형 추가 정보';
+
+ALTER TABLE exchange_students ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "exchange_students: 본인 프로필 접근"
+    ON exchange_students FOR ALL
+    TO authenticated
+    USING  (uid = auth.uid())
+    WITH CHECK (uid = auth.uid());
+
+-- ============================================================
+--  [교환학생 파트] 31. essential_packages
+-- ============================================================
+
+DROP TABLE IF EXISTS essential_packages CASCADE;
+
+CREATE TABLE essential_packages (
+    package_id     INTEGER          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    template_type  VARCHAR(50)      NOT NULL,
+    name           JSONB            NOT NULL DEFAULT '{}',
+    region_group   VARCHAR(10)      NULL,
+    housing_type   housing_type_t   NULL,
+    created_at     TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_essential_packages_type UNIQUE (template_type)
+);
+
+COMMENT ON TABLE  essential_packages              IS '패키지 템플릿 마스터 (DORM_BASIC / FLAT_FULL / INCOMING_DORM)';
+COMMENT ON COLUMN essential_packages.name         IS 'JSONB 다국어 이름 { "ko": "...", "en": "..." }';
+COMMENT ON COLUMN essential_packages.region_group IS 'NULL 이면 전 지역 공통 템플릿';
+
+ALTER TABLE essential_packages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "essential_packages: 전체 공개 읽기"
+    ON essential_packages FOR SELECT USING (true);
+
+-- ============================================================
+--  [교환학생 파트] 32. package_items
+-- ============================================================
+
+DROP TABLE IF EXISTS package_items CASCADE;
+
+CREATE TABLE package_items (
+    package_item_id        INTEGER  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    package_id             INTEGER  NOT NULL,
+    category_id            INTEGER  NOT NULL,
+    is_required            BOOLEAN  NOT NULL DEFAULT TRUE,
+    priority_order         INTEGER  NOT NULL DEFAULT 0,
+    requires_hygiene_cert  BOOLEAN  NOT NULL DEFAULT FALSE,
+
+    CONSTRAINT uq_package_items UNIQUE (package_id, category_id),
+    CONSTRAINT fk_package_items_package
+        FOREIGN KEY (package_id)
+        REFERENCES  essential_packages (package_id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_package_items_category
+        FOREIGN KEY (category_id)
+        REFERENCES  categories (category_id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+);
+
+CREATE INDEX idx_package_items_package ON package_items (package_id);
+
+COMMENT ON TABLE  package_items                       IS '패키지 구성 물품 — essential_packages ↔ categories 연결';
+COMMENT ON COLUMN package_items.requires_hygiene_cert IS '세탁 인증 필요 여부 (이불·베개·토퍼 등)';
+COMMENT ON COLUMN package_items.priority_order        IS '물품 표시 순서 (낮을수록 우선)';
+
+ALTER TABLE package_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "package_items: 전체 공개 읽기"
+    ON package_items FOR SELECT USING (true);
+
+-- ============================================================
+--  [교환학생 파트] 33. package_matches
+-- ============================================================
+
+DROP TABLE IF EXISTS package_matches CASCADE;
+
+CREATE TABLE package_matches (
+    match_id    BIGINT           GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    package_id  INTEGER          NOT NULL,
+    buyer_uid   UUID             NOT NULL,
+    seller_uid  UUID             NOT NULL,
+    status      match_status_t   NOT NULL DEFAULT 'pending',
+    semester    VARCHAR(20)      NULL,
+    created_at  TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_package_matches_no_self CHECK (buyer_uid <> seller_uid),
+    CONSTRAINT fk_package_matches_package
+        FOREIGN KEY (package_id)
+        REFERENCES  essential_packages (package_id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_package_matches_buyer
+        FOREIGN KEY (buyer_uid)
+        REFERENCES  users (uid)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_package_matches_seller
+        FOREIGN KEY (seller_uid)
+        REFERENCES  users (uid)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+);
+
+CREATE TRIGGER trg_package_matches_updated_at
+    BEFORE UPDATE ON package_matches
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE INDEX idx_package_matches_buyer  ON package_matches (buyer_uid);
+CREATE INDEX idx_package_matches_seller ON package_matches (seller_uid);
+CREATE INDEX idx_package_matches_status ON package_matches (status);
+
+COMMENT ON TABLE  package_matches        IS '교환학생 패키지 바이어-셀러 매칭';
+COMMENT ON COLUMN package_matches.status IS 'ENUM match_status_t: pending | matched | completed | cancelled';
+
+ALTER TABLE package_matches ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "package_matches: 당사자만 읽기"
+    ON package_matches FOR SELECT
+    TO authenticated
+    USING (buyer_uid = auth.uid() OR seller_uid = auth.uid());
+
+CREATE POLICY "package_matches: 바이어 매칭 요청"
+    ON package_matches FOR INSERT
+    TO authenticated
+    WITH CHECK (buyer_uid = auth.uid());
+
+CREATE POLICY "package_matches: 당사자 상태 변경"
+    ON package_matches FOR UPDATE
+    TO authenticated
+    USING (buyer_uid = auth.uid() OR seller_uid = auth.uid());
+
+-- chat_rooms.package_match_id FK 추가 (package_matches 생성 후)
+ALTER TABLE chat_rooms
+    ADD CONSTRAINT fk_chat_rooms_package_match
+        FOREIGN KEY (package_match_id)
+        REFERENCES  package_matches (match_id)
+        ON DELETE SET NULL
+        ON UPDATE RESTRICT;
+
+-- ============================================================
+--  [교환학생 파트] 34. hygiene_certifications
+-- ============================================================
+
+DROP TABLE IF EXISTS hygiene_certifications CASCADE;
+
+CREATE TABLE hygiene_certifications (
+    cert_id      BIGINT          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    seller_uid   UUID            NOT NULL,
+    category_id  INTEGER         NOT NULL,
+    image_url    TEXT            NOT NULL,
+    status       cert_status_t   NOT NULL DEFAULT 'pending',
+    reviewed_at  TIMESTAMPTZ     NULL,
+    created_at   TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_hygiene_cert_seller
+        FOREIGN KEY (seller_uid)
+        REFERENCES  users (uid)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_hygiene_cert_category
+        FOREIGN KEY (category_id)
+        REFERENCES  categories (category_id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+);
+
+CREATE TRIGGER trg_hygiene_certifications_updated_at
+    BEFORE UPDATE ON hygiene_certifications
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE INDEX idx_hygiene_cert_seller ON hygiene_certifications (seller_uid);
+
+COMMENT ON TABLE  hygiene_certifications           IS '세탁 인증 — 이불·베개·토퍼 등 위생 필수 물품';
+COMMENT ON COLUMN hygiene_certifications.status    IS 'ENUM cert_status_t: pending | approved | rejected';
+COMMENT ON COLUMN hygiene_certifications.image_url IS 'Supabase Storage URL — 세탁 완료 사진';
+
+ALTER TABLE hygiene_certifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "hygiene_certifications: 셀러 본인 접근"
+    ON hygiene_certifications FOR ALL
+    TO authenticated
+    USING  (seller_uid = auth.uid())
+    WITH CHECK (seller_uid = auth.uid());
+
+-- ============================================================
+--  [교환학생 파트] 35. package_listings
+-- ============================================================
+
+DROP TABLE IF EXISTS package_listings CASCADE;
+
+CREATE TABLE package_listings (
+    listing_id   BIGINT            GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    match_id     BIGINT            NOT NULL,
+    seller_uid   UUID              NOT NULL,
+    category_id  INTEGER           NOT NULL,
+    status       product_status_t  NOT NULL DEFAULT 'selling',
+    semester     VARCHAR(20)       NULL,
+    image_url    TEXT              NULL,
+    cert_id      BIGINT            NULL,
+    created_at   TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_package_listings_match
+        FOREIGN KEY (match_id)
+        REFERENCES  package_matches (match_id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_package_listings_seller
+        FOREIGN KEY (seller_uid)
+        REFERENCES  users (uid)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_package_listings_category
+        FOREIGN KEY (category_id)
+        REFERENCES  categories (category_id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_package_listings_cert
+        FOREIGN KEY (cert_id)
+        REFERENCES  hygiene_certifications (cert_id)
+        ON DELETE SET NULL
+        ON UPDATE RESTRICT
+);
+
+CREATE TRIGGER trg_package_listings_updated_at
+    BEFORE UPDATE ON package_listings
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE INDEX idx_package_listings_match  ON package_listings (match_id);
+CREATE INDEX idx_package_listings_seller ON package_listings (seller_uid);
+CREATE INDEX idx_package_listings_status ON package_listings (status);
+
+COMMENT ON TABLE  package_listings           IS '교환학생 패키지 전용 매물 — 일반 products 와 분리';
+COMMENT ON COLUMN package_listings.status    IS 'ENUM product_status_t 재사용: selling | reserved | sold';
+COMMENT ON COLUMN package_listings.cert_id   IS 'FK → hygiene_certifications — 세탁 인증 필요 물품에만 연결';
+COMMENT ON COLUMN package_listings.image_url IS 'Supabase Storage URL';
+
+ALTER TABLE package_listings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "package_listings: 인증 사용자 읽기"
+    ON package_listings FOR SELECT
+    TO authenticated
+    USING (true);
+
+CREATE POLICY "package_listings: 셀러 본인 등록"
+    ON package_listings FOR INSERT
+    TO authenticated
+    WITH CHECK (seller_uid = auth.uid());
+
+CREATE POLICY "package_listings: 셀러 본인 수정"
+    ON package_listings FOR UPDATE
+    TO authenticated
+    USING  (seller_uid = auth.uid())
+    WITH CHECK (seller_uid = auth.uid());
+
+-- ============================================================
+--  [교환학생 파트] 36. exchange_wishlists
+-- ============================================================
+
+DROP TABLE IF EXISTS exchange_wishlists CASCADE;
+
+CREATE TABLE exchange_wishlists (
+    exchange_wishlist_id  BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    uid                   UUID         NOT NULL,
+    category_id           INTEGER      NOT NULL,
+    region_group          VARCHAR(10)  NULL,
+    semester              VARCHAR(20)  NULL,
+    is_notified           BOOLEAN      NOT NULL DEFAULT FALSE,
+    notified_at           TIMESTAMPTZ  NULL,
+    deleted_at            TIMESTAMPTZ  NULL,
+    created_at            TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_exchange_wishlists UNIQUE (uid, category_id, region_group, semester),
+    CONSTRAINT fk_exchange_wishlists_user
+        FOREIGN KEY (uid)
+        REFERENCES  users (uid)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    CONSTRAINT fk_exchange_wishlists_category
+        FOREIGN KEY (category_id)
+        REFERENCES  categories (category_id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+);
+
+CREATE INDEX idx_exchange_wishlists_uid ON exchange_wishlists (uid) WHERE deleted_at IS NULL;
+
+COMMENT ON TABLE  exchange_wishlists             IS '교환학생 알림 신청 — 카테고리+지역 기반, 기존 wishlists 와 별도';
+COMMENT ON COLUMN exchange_wishlists.is_notified IS '알림 발송 여부';
+COMMENT ON COLUMN exchange_wishlists.deleted_at  IS 'Soft Delete — NULL 이면 활성';
+
+ALTER TABLE exchange_wishlists ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "exchange_wishlists: 본인만 접근"
+    ON exchange_wishlists FOR ALL
+    TO authenticated
+    USING  (uid = auth.uid() AND deleted_at IS NULL)
+    WITH CHECK (uid = auth.uid());
+
+-- ============================================================
+--  37. Supabase Realtime 활성화
 -- ============================================================
 
 ALTER PUBLICATION supabase_realtime ADD TABLE chat_rooms;
 ALTER PUBLICATION supabase_realtime ADD TABLE chat_participants;
 ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE package_matches;
+ALTER PUBLICATION supabase_realtime ADD TABLE package_listings;
 
 -- ============================================================
---  22. mv_popular_products  (인기 상품 Materialized View)
---      - view_count + wishlist 수 + 최신성 합산 점수로 랭킹 산출
---      - pg_cron 으로 1시간마다 자동 갱신 (Supabase 대시보드에서 활성화 필요)
---      - 클라이언트는 products 테이블 대신 이 뷰를 SELECT 하면 됨
+--  38. mv_popular_products  (인기 상품 Materialized View)
 -- ============================================================
 
 DROP MATERIALIZED VIEW IF EXISTS mv_popular_products;
@@ -965,7 +1709,6 @@ SELECT
     p.seller_uid,
     p.category_id,
     COUNT(w.wishlist_id)                            AS wish_count,
-    -- 점수: 조회수 가중 1.0 + 찜 수 가중 3.0 + 최신성(7일 기준 감쇠)
     (
         p.view_count * 1.0
         + COUNT(w.wishlist_id) * 3.0
@@ -1002,6 +1745,109 @@ INSERT INTO regions (name) VALUES
     ('캠퍼스 내'),
     ('시내'),
     ('온라인 택배');
+
+-- ── Seed: majors (고려대 입학처 학과 안내 페이지 기준) ────────
+INSERT INTO majors (name, college) VALUES
+    -- 경영대학
+    ('경영학과',             '경영대학'),
+
+    -- 문과대학
+    ('국어국문학과',         '문과대학'),
+    ('철학과',               '문과대학'),
+    ('한국사학과',           '문과대학'),
+    ('사학과',               '문과대학'),
+    ('사회학과',             '문과대학'),
+    ('한문학과',             '문과대학'),
+    ('영어영문학과',         '문과대학'),
+    ('독어독문학과',         '문과대학'),
+    ('불어불문학과',         '문과대학'),
+    ('중어중문학과',         '문과대학'),
+    ('노어노문학과',         '문과대학'),
+    ('일어일문학과',         '문과대학'),
+    ('서어서문학과',         '문과대학'),
+    ('언어학과',             '문과대학'),
+
+    -- 생명과학대학
+    ('생명과학부',           '생명과학대학'),
+    ('생명공학부',           '생명과학대학'),
+    ('식품공학과',           '생명과학대학'),
+    ('환경생태공학부',       '생명과학대학'),
+    ('식품자원경제학과',     '생명과학대학'),
+
+    -- 정경대학
+    ('정치외교학과',         '정경대학'),
+    ('경제학과',             '정경대학'),
+    ('통계학과',             '정경대학'),
+    ('행정학과',             '정경대학'),
+
+    -- 이과대학
+    ('수학과',               '이과대학'),
+    ('물리학과',             '이과대학'),
+    ('화학과',               '이과대학'),
+    ('지구환경과학과',       '이과대학'),
+
+    -- 공과대학
+    ('화공생명공학과',       '공과대학'),
+    ('신소재공학부',         '공과대학'),
+    ('건축사회환경공학부',   '공과대학'),
+    ('건축학과',             '공과대학'),
+    ('기계공학부',           '공과대학'),
+    ('산업경영공학부',       '공과대학'),
+    ('전기전자공학부',       '공과대학'),
+    ('융합에너지공학과',     '공과대학'),
+    ('반도체공학과',         '공과대학'),
+    ('차세대통신학과',       '공과대학'),
+
+    -- 의과대학
+    ('의(예)학과',           '의과대학'),
+
+    -- 사범대학
+    ('교육학과',             '사범대학'),
+    ('국어교육과',           '사범대학'),
+    ('영어교육과',           '사범대학'),
+    ('지리교육과',           '사범대학'),
+    ('역사교육과',           '사범대학'),
+    ('가정교육과',           '사범대학'),
+    ('수학교육과',           '사범대학'),
+    ('체육교육과',           '사범대학'),
+
+    -- 간호대학
+    ('간호학과',             '간호대학'),
+
+    -- 정보대학
+    ('컴퓨터학과',           '정보대학'),
+    ('데이터과학과',         '정보대학'),
+    ('인공지능학과',         '정보대학'),
+
+    -- 디자인조형학부
+    ('디자인조형학부',       '디자인조형학부'),
+
+    -- 국제대학
+    ('국제학부',             '국제대학'),
+    ('글로벌한국융합학부',   '국제대학'),
+
+    -- 미디어대학
+    ('미디어학부',           '미디어대학'),
+
+    -- 보건과학대학
+    ('바이오의공학부',       '보건과학대학'),
+    ('바이오시스템의과학부', '보건과학대학'),
+    ('보건환경융합과학부',   '보건과학대학'),
+    ('보건정책관리학부',     '보건과학대학'),
+
+    -- 자유전공학부
+    ('자유전공학부',         '자유전공학부'),
+
+    -- 스마트모빌리티학부 (현대차 계약학과)
+    ('스마트모빌리티학부',   '스마트모빌리티학부'),
+
+    -- 스마트보안학부 (국방부 계약학과 포함)
+    ('스마트보안학부',       '스마트보안학부'),
+    ('사이버국방학과',       '스마트보안학부'),
+
+    -- 심리학부
+    ('심리학부',             '심리학부')
+ON CONFLICT (name) DO NOTHING;
 
 -- ── Seed: categories (CTE + RETURNING 으로 계층 한 번에 삽입) ─
 WITH top_level AS (
@@ -1045,6 +1891,48 @@ INSERT INTO manner_keywords (label) VALUES
     ('흥정이 무리 없어요'),
     ('좋은 상품을 저렴하게 판매해요'),
     ('또 거래하고 싶어요');
+
+-- ── Seed: countries (23개 지역 그룹) ──────────────────────────
+INSERT INTO countries (country_code, name_ko, name_en, region_group) VALUES
+    ('E1',      '영어권 유럽',       'Anglophone Europe',   'E1'),
+    ('E2',      '프랑스어권',        'Francophone',         'E2'),
+    ('E3',      '독일어권',          'German-speaking',     'E3'),
+    ('E4',      '남유럽',            'Southern Europe',     'E4'),
+    ('E5',      '동유럽',            'Eastern Europe',      'E5'),
+    ('A1-N',    '일본 북부',         'Japan North',         'A1-N'),
+    ('A1-C',    '일본 중부/수도권',  'Japan Central',       'A1-C'),
+    ('A1-W',    '일본 서부',         'Japan West',          'A1-W'),
+    ('A2-N',    '중국 북부',         'China North',         'A2-N'),
+    ('A2-C',    '중국 중부/동부',    'China Central/East',  'A2-C'),
+    ('A2-S',    '중국 남부',         'China South',         'A2-S'),
+    ('A3',      '동아시아/동남아',   'East/Southeast Asia', 'A3'),
+    ('N1-W',    '미국 서부',         'US West',             'N1-W'),
+    ('N1-C',    '미국 중부',         'US Central',          'N1-C'),
+    ('N1-E',    '미국 동부',         'US East',             'N1-E'),
+    ('N1-S',    '미국 남부/하와이',  'US South/Hawaii',     'N1-S'),
+    ('N2-W',    '캐나다 서부',       'Canada West',         'N2-W'),
+    ('N2-E',    '캐나다 동부',       'Canada East',         'N2-E'),
+    ('O1',      '오세아니아',        'Oceania',             'O1'),
+    ('S1',      '멕시코',            'Mexico',              'S1'),
+    ('S2-BR',   '브라질',            'Brazil',              'S2-BR'),
+    ('S2-CL',   '칠레',              'Chile',               'S2-CL'),
+    ('S2-REST', '중남미 기타',       'LatAm Other',         'S2-REST')
+ON CONFLICT (country_code) DO NOTHING;
+
+-- ── Seed: essential_packages (템플릿 3종) ──────────────────────
+INSERT INTO essential_packages (template_type, name, region_group, housing_type) VALUES
+    ('DORM_BASIC',
+     '{"ko": "기숙사 기본 패키지", "en": "Dorm Basic Package"}',
+     NULL, 'dorm'),
+    ('FLAT_FULL',
+     '{"ko": "자취/플랫셰어 풀 패키지", "en": "Flat Full Package"}',
+     NULL, 'flat'),
+    ('INCOMING_DORM',
+     '{"ko": "고려대 기숙사 입주 패키지", "en": "KU Incoming Dorm Package"}',
+     NULL, 'dorm')
+ON CONFLICT (template_type) DO NOTHING;
+
+-- ※ item_categories seed 는 추후 기획 확정 후 별도 작성 예정
 
 COMMIT;  -- 모든 DDL + Seed 정상 완료 시 커밋
 
