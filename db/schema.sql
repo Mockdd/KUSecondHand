@@ -79,15 +79,7 @@ DO $$ BEGIN
     -- '없음' / '연필/샤프' / '볼펜/형광펜'
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-DO $$ BEGIN
-    CREATE TYPE book_cover_t  AS ENUM ('clean', 'not_clean');
-    -- '깨끗함' / '깨끗하지 않음'
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-    CREATE TYPE yes_no_t      AS ENUM ('yes', 'no');
-    -- '있음' / '없음'
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- book_cover_t / yes_no_t 는 값이 2개뿐이므로 BOOLEAN 으로 대체 (아래 book_conditions 참조)
 
 DO $$ BEGIN
     CREATE TYPE grade_hml_t   AS ENUM ('high', 'mid', 'low');
@@ -152,6 +144,45 @@ DROP TRIGGER IF EXISTS trg_on_auth_user_created ON auth.users;
 CREATE TRIGGER trg_on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION fn_on_auth_user_created();
+
+-- ============================================================
+--  3-b. 거래 완료 시 trade_count 자동 갱신
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION fn_sync_trade_count()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+    -- status 가 'completed' 로 전환되는 순간에만 카운트 증가
+    IF TG_OP = 'UPDATE'
+       AND NEW.status = 'completed'
+       AND OLD.status <> 'completed'
+    THEN
+        UPDATE users SET trade_count = trade_count + 1 WHERE uid = NEW.buyer_uid;
+        UPDATE users SET trade_count = trade_count + 1 WHERE uid = NEW.seller_uid;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+-- ============================================================
+--  3-c. 경고 패널티 등록 시 warning_count 자동 갱신
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION fn_sync_warning_count()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+    IF NEW.type = 'warning' THEN
+        UPDATE users SET warning_count = warning_count + 1 WHERE uid = NEW.uid;
+    END IF;
+    RETURN NEW;
+END;
+$$;
 
 -- ============================================================
 --  4. regions
@@ -358,7 +389,7 @@ COMMENT ON COLUMN products.pid         IS '상품 UUID (PK)';
 COMMENT ON COLUMN products.price       IS '현재 게시 가격(원) — 거래 시점 가격은 transactions.agreed_price 참조';
 COMMENT ON COLUMN products.condition   IS 'ENUM product_condition_t: new | like_new | good | fair | poor';
 COMMENT ON COLUMN products.status      IS 'ENUM product_status_t: selling | reserved | sold';
-COMMENT ON COLUMN products.view_count  IS '상품 조회수 — Redis 없이 PostgreSQL 에서 직접 관리';
+COMMENT ON COLUMN products.view_count  IS '상품 조회수 캐시 — product_view_logs 에서 pg_cron 배치 갱신 (뷰 이벤트 발생 시 직접 UPDATE 금지)';
 COMMENT ON COLUMN products.updated_at  IS '최종 수정 시각 — trg_products_updated_at 트리거로 자동 갱신';
 COMMENT ON COLUMN products.deleted_at  IS 'Soft Delete 시각 — NULL 이면 공개 게시물';
 
@@ -389,6 +420,61 @@ CREATE INDEX idx_products_fts_desc
 CREATE INDEX idx_products_trgm_title
     ON products USING GIN (title gin_trgm_ops)
     WHERE deleted_at IS NULL;
+
+-- ============================================================
+--  8-b. product_view_logs  (조회 이벤트 INSERT 전용)
+--       앱에서 products.view_count 를 직접 UPDATE 하지 않고
+--       여기에 INSERT 후 pg_cron 배치로 집계해 view_count 를 갱신한다.
+-- ============================================================
+
+DROP TABLE IF EXISTS product_view_logs CASCADE;
+
+CREATE TABLE product_view_logs (
+    log_id      BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    pid         UUID        NOT NULL,
+    viewer_uid  UUID        NULL,           -- NULL = 비로그인 조회
+    viewed_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_view_logs_product
+        FOREIGN KEY (pid)
+        REFERENCES  products (pid)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT
+);
+
+CREATE INDEX idx_product_view_logs_pid ON product_view_logs (pid, viewed_at DESC);
+
+COMMENT ON TABLE  product_view_logs           IS '상품 조회 이벤트 로그 — INSERT 전용, pg_cron 배치로 products.view_count 갱신';
+COMMENT ON COLUMN product_view_logs.viewer_uid IS 'NULL 이면 비로그인 조회';
+
+ALTER TABLE product_view_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "product_view_logs: 인증 사용자 조회 이벤트 등록"
+    ON product_view_logs FOR INSERT
+    TO authenticated
+    WITH CHECK (true);
+
+CREATE POLICY "product_view_logs: 익명 사용자 조회 이벤트 등록"
+    ON product_view_logs FOR INSERT
+    TO anon
+    WITH CHECK (true);
+
+-- pg_cron: 매 10분마다 조회수 배치 갱신 (pg_cron 활성화 후 주석 해제)
+-- SELECT cron.schedule(
+--     'sync-view-counts',
+--     '*/10 * * * *',
+--     $$
+--     UPDATE products p
+--     SET    view_count = p.view_count + agg.cnt
+--     FROM (
+--         SELECT pid, COUNT(*) AS cnt
+--         FROM   product_view_logs
+--         WHERE  viewed_at >= NOW() - INTERVAL '10 minutes'
+--         GROUP  BY pid
+--     ) agg
+--     WHERE p.pid = agg.pid;
+--     $$
+-- );
 
 -- ============================================================
 --  9. product_images
@@ -452,10 +538,10 @@ CREATE TABLE book_conditions (
     pid              UUID          NOT NULL,
     underline_mark   book_mark_t   NOT NULL,    -- 밑줄
     handwriting      book_mark_t   NOT NULL,    -- 필기
-    cover_state      book_cover_t  NOT NULL,    -- 표지 상태
-    name_written     yes_no_t      NOT NULL,    -- 이름 기재 여부
-    discoloration    yes_no_t      NOT NULL,    -- 변색
-    page_damage      yes_no_t      NOT NULL,    -- 페이지 손상
+    cover_state      BOOLEAN       NOT NULL,    -- TRUE = 깨끗함 / FALSE = 깨끗하지 않음
+    name_written     BOOLEAN       NOT NULL,    -- TRUE = 이름 기재됨
+    discoloration    BOOLEAN       NOT NULL,    -- TRUE = 변색 있음
+    page_damage      BOOLEAN       NOT NULL,    -- TRUE = 페이지 손상 있음
 
     CONSTRAINT pk_book_conditions PRIMARY KEY (pid),
     CONSTRAINT fk_book_conditions_product
@@ -467,7 +553,10 @@ CREATE TABLE book_conditions (
 
 COMMENT ON TABLE  book_conditions                IS '도서 매물 상세 상태 — products 1:0..1';
 COMMENT ON COLUMN book_conditions.underline_mark IS 'ENUM book_mark_t: none | pencil | pen';
-COMMENT ON COLUMN book_conditions.cover_state    IS 'ENUM book_cover_t: clean | not_clean';
+COMMENT ON COLUMN book_conditions.cover_state    IS 'BOOLEAN: TRUE = 깨끗함, FALSE = 깨끗하지 않음';
+COMMENT ON COLUMN book_conditions.name_written   IS 'BOOLEAN: TRUE = 이름 기재됨';
+COMMENT ON COLUMN book_conditions.discoloration  IS 'BOOLEAN: TRUE = 변색 있음';
+COMMENT ON COLUMN book_conditions.page_damage    IS 'BOOLEAN: TRUE = 페이지 손상 있음';
 
 ALTER TABLE book_conditions ENABLE ROW LEVEL SECURITY;
 
@@ -615,8 +704,13 @@ CREATE TABLE chat_rooms (
         FOREIGN KEY (product_id)
         REFERENCES  products (pid)
         ON DELETE RESTRICT
-        ON UPDATE RESTRICT
+        ON UPDATE RESTRICT,
     -- fk_chat_rooms_package_match 는 package_matches 생성 후 추가
+    CONSTRAINT chk_chat_rooms_xor
+        CHECK (
+            (product_id IS NOT NULL AND package_match_id IS NULL)
+            OR  (product_id IS NULL  AND package_match_id IS NOT NULL)
+        )
 );
 
 CREATE INDEX idx_chat_rooms_product ON chat_rooms (product_id);
@@ -753,6 +847,10 @@ CREATE POLICY "transactions: 관련 당사자 상태 변경"
     ON transactions FOR UPDATE
     TO authenticated
     USING (buyer_uid = auth.uid() OR seller_uid = auth.uid());
+
+CREATE TRIGGER trg_transactions_trade_count
+    AFTER UPDATE ON transactions
+    FOR EACH ROW EXECUTE FUNCTION fn_sync_trade_count();
 
 -- ============================================================
 --  16. reviews
@@ -992,6 +1090,10 @@ CREATE POLICY "user_penalties: 본인 제재 이력 읽기"
     TO authenticated
     USING (uid = auth.uid());
 
+CREATE TRIGGER trg_user_penalties_warning_count
+    AFTER INSERT ON user_penalties
+    FOR EACH ROW EXECUTE FUNCTION fn_sync_warning_count();
+
 -- ============================================================
 --  22. chat_messages  (MongoDB 대체 — JSONB 하이브리드 구조)
 -- ============================================================
@@ -1098,6 +1200,34 @@ COMMENT ON COLUMN audit_logs.metadata   IS 'JSONB: 이벤트별 컨텍스트 (de
 -- RLS: 일반 사용자 접근 전면 차단 — 서버 사이드(service_role)에서만 INSERT/SELECT
 -- service_role 키는 RLS 를 자동 우회하므로 별도 정책 불필요
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- 다음달 파티션 자동 생성 함수 — pg_cron 으로 매월 1일 자동 실행
+CREATE OR REPLACE FUNCTION fn_create_next_audit_partition()
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+    next_month      DATE := date_trunc('month', NOW() + INTERVAL '1 month');
+    partition_name  TEXT := 'audit_logs_' || to_char(next_month, 'YYYY_MM');
+    start_date      TEXT := to_char(next_month, 'YYYY-MM-DD');
+    end_date        TEXT := to_char(next_month + INTERVAL '1 month', 'YYYY-MM-DD');
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = partition_name) THEN
+        EXECUTE format(
+            'CREATE TABLE %I PARTITION OF audit_logs FOR VALUES FROM (%L) TO (%L)',
+            partition_name, start_date, end_date
+        );
+    END IF;
+END;
+$$;
+
+-- pg_cron: 매월 1일 00:05 에 다음달 파티션 자동 생성 (pg_cron 활성화 후 주석 해제)
+-- SELECT cron.schedule(
+--     'create-audit-partition',
+--     '5 0 1 * *',
+--     'SELECT fn_create_next_audit_partition()'
+-- );
 
 -- ============================================================
 --  [수강/추천 파트] ENUM 추가
@@ -1399,7 +1529,8 @@ DROP TABLE IF EXISTS essential_packages CASCADE;
 CREATE TABLE essential_packages (
     package_id     INTEGER          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     template_type  VARCHAR(50)      NOT NULL,
-    name           JSONB            NOT NULL DEFAULT '{}',
+    name_ko        VARCHAR(200)     NOT NULL,
+    name_en        VARCHAR(200)     NOT NULL,
     region_group   VARCHAR(10)      NULL,
     housing_type   housing_type_t   NULL,
     created_at     TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
@@ -1408,7 +1539,8 @@ CREATE TABLE essential_packages (
 );
 
 COMMENT ON TABLE  essential_packages              IS '패키지 템플릿 마스터 (DORM_BASIC / FLAT_FULL / INCOMING_DORM)';
-COMMENT ON COLUMN essential_packages.name         IS 'JSONB 다국어 이름 { "ko": "...", "en": "..." }';
+COMMENT ON COLUMN essential_packages.name_ko      IS '패키지 한국어 이름';
+COMMENT ON COLUMN essential_packages.name_en      IS '패키지 영어 이름';
 COMMENT ON COLUMN essential_packages.region_group IS 'NULL 이면 전 지역 공통 템플릿';
 
 ALTER TABLE essential_packages ENABLE ROW LEVEL SECURITY;
@@ -2086,16 +2218,10 @@ INSERT INTO countries (country_code, name_ko, name_en, region_group) VALUES
 ON CONFLICT (country_code) DO NOTHING;
 
 -- ── Seed: essential_packages (템플릿 3종) ──────────────────────
-INSERT INTO essential_packages (template_type, name, region_group, housing_type) VALUES
-    ('DORM_BASIC',
-     '{"ko": "기숙사 기본 패키지", "en": "Dorm Basic Package"}',
-     NULL, 'dorm'),
-    ('FLAT_FULL',
-     '{"ko": "자취/플랫셰어 풀 패키지", "en": "Flat Full Package"}',
-     NULL, 'flat'),
-    ('INCOMING_DORM',
-     '{"ko": "고려대 기숙사 입주 패키지", "en": "KU Incoming Dorm Package"}',
-     NULL, 'dorm')
+INSERT INTO essential_packages (template_type, name_ko, name_en, region_group, housing_type) VALUES
+    ('DORM_BASIC',    '기숙사 기본 패키지',        'Dorm Basic Package',        NULL, 'dorm'),
+    ('FLAT_FULL',     '자취/플랫셰어 풀 패키지',   'Flat Full Package',          NULL, 'flat'),
+    ('INCOMING_DORM', '고려대 기숙사 입주 패키지', 'KU Incoming Dorm Package',   NULL, 'dorm')
 ON CONFLICT (template_type) DO NOTHING;
 
 -- ※ item_categories seed 는 추후 기획 확정 후 별도 작성 예정
