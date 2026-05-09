@@ -75,3 +75,107 @@ export interface RecommendationGroup {
   reason_template: string | null
   priority: number
 }
+
+/**
+ * 상품 카테고리 1건의 최소 표현.
+ *
+ * - getCategoryById 반환 / ProductDetail.category 양쪽에서 공유
+ * - parent 계층은 화면 3/4 에서 사용 안 하므로 미포함
+ */
+export interface CategorySummary {
+  category_id: number
+  name: string
+}
+
+/**
+ * 매물 목록(화면 3) 정렬 옵션.
+ * - recommended: view_count DESC, created_at DESC (인기 매물 상단)
+ * - price_asc:   price ASC, created_at DESC
+ * - latest:      created_at DESC
+ */
+export type ProductSort = 'recommended' | 'price_asc' | 'latest'
+
+/**
+ * 매물 목록 카드 1건 — 화면 3 그리드 렌더링용.
+ *
+ * status 'sold' 매물은 listProductsByCategory 에서 제외하지만,
+ * 'reserved' 는 노출하므로 타입에는 세 값 모두 유지.
+ * thumbnail_url 은 product_images.display_order 최소 행의 image_url. 이미지 없으면 null.
+ */
+export interface ProductListItem {
+  pid: string
+  title: string
+  price: number
+  status: 'selling' | 'reserved' | 'sold'
+  // DB enum: product_condition_t.
+  condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+  view_count: number
+  created_at: string
+  thumbnail_url: string | null
+}
+
+/**
+ * 도서 매물 상세 상태 — book_conditions 1:0..1.
+ * 도서 매물이 아니거나 등록 안 된 경우 ProductDetail.book_condition = null.
+ *
+ * ⚠️ TODO — 옆 팀의 BOOLEAN 마이그레이션 적용 시 정정 필요
+ *   yes_no_t, book_cover_t → BOOLEAN 으로 변경 예정
+ *   영향: cover_state, name_written, discoloration, page_damage 4개 필드
+ *   참고: schema.sql line 82 주석 + 옆 팀 schema 리뷰 #2
+ */
+export interface BookConditionData {
+  // DB enum: book_mark_t.
+  underline_mark: 'none' | 'pencil' | 'pen_highlighter'
+  handwriting:    'none' | 'pencil' | 'pen_highlighter'
+  // DB enum: book_cover_t.
+  cover_state:    'clean' | 'not_clean'
+  // DB enum: yes_no_t.
+  name_written:   'yes' | 'no'
+  discoloration:  'yes' | 'no'
+  page_damage:    'yes' | 'no'
+}
+
+/**
+ * 기기 매물 상세 상태 — device_conditions 1:0..1.
+ * 기기 매물이 아니거나 등록 안 된 경우 ProductDetail.device_condition = null.
+ */
+export interface DeviceConditionData {
+  // DB enum: grade_hml_t.
+  usage_wear:       'high' | 'mid' | 'low'
+  cleanliness:      'high' | 'mid' | 'low'
+  // DB enum: device_op_t.
+  operation_status: 'normal' | 'partial_issue'
+  // DB enum: included_t.
+  battery_included: 'included' | 'not_included'
+  // DB enum: accessories_t.
+  accessories:      'body_only' | 'case_included' | 'manual_included'
+}
+
+/**
+ * 매물 상세 화면(화면 4) 표시용 통합 타입.
+ *
+ * products 1건 + product_images 전체 + book_conditions/device_conditions(둘 중 하나)
+ * + seller(users) + category 를 한 번에 조회한 결과.
+ * book_condition 과 device_condition 은 동시에 채워지지 않음 (양쪽 모두 null 인 매물은 ETC 카테고리 가능).
+ */
+export interface ProductDetail {
+  pid: string
+  title: string
+  price: number
+  description: string | null
+  status: 'selling' | 'reserved' | 'sold'
+  condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+  view_count: number
+  created_at: string
+  category: CategorySummary
+  images: { image_url: string; display_order: number }[]
+  seller: {
+    uid: string
+    nickname: string
+    profile_image_url: string | null
+    manner_temperature: number
+    trade_count: number
+  }
+  book_condition: BookConditionData | null
+  device_condition: DeviceConditionData | null
+}
