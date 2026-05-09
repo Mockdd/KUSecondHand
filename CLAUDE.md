@@ -72,13 +72,24 @@
   - item_categories.category_id (FK → categories) 추가 — 라이브 DB 적용 완료
   - 7개 매핑 시드 적용 완료 (콘솔 확인)
   - SQL 자산 MVP-v2/ 로 정착: supabase/migrations/, supabase/seed/, schema.sql
-- Step 4: 본격 신규 작업 ← 다음 작업 후보
-  - 화면 3 (매물 목록)
-  - 화면 4 (상품 상세)
+- Step 4: 본격 신규 작업 ✅ 완료 (4-1, 4-2, 4-3)
+  - 4-1: 화면 3 (매물 목록) — `/products?cat_id=...` 라우트, 추천 결과 → 매물 진입
+  - 4-2: 시드 데이터 (`supabase/seed/products_dev.sql`) — 15개 매물 + 이미지 + 책/기기 컨디션
+  - 4-3: 화면 4 (상품 상세) — `/products/[pid]`, 이미지 슬라이더, 책/기기 분기, 판매자 정보, view 로깅
+  - 시각 검증 통과 (4개 화면 모두)
+- Step 5: 옆 팀 합치기 ← 다음 작업 (내일 미팅 후)
+  - 로그인 페이지 (옆 팀 정식 vs 본인 dev/login)
+  - 매물 페이지 분담 합의 (본인 vs 옆 팀)
+  - 찜/채팅 함수 연결 (현재 placeholder)
+  - 매물 등록 흐름 (옆 팀 영역, schema 의 trade_location 컬럼 등 합의)
+
+## 현재 상태 (2026-05-10)
+본인 담당 4개 화면 모두 완성. 옆 팀 합치기 대기 중.
 
 ### 알려진 follow-up
 - ESLint flat config 가 legacy `eslint-config-next` preset 과 호환 안 됨
   (baseline 8d56fbb 부터 존재). FlatCompat 적용 필요. 마이그레이션과 무관.
+- 찜/채팅 버튼 — 화면 4 에서 placeholder. 옆 팀 함수와 연결 필요.
 
 ## 마이그레이션 시 주의사항
 - import 경로 변경: `@/lib/...` → `@lib/...` (팀 paths 컨벤션)
