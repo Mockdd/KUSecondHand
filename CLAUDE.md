@@ -68,10 +68,11 @@
   - Next 15 cookies async 적용
   - 시각 검증 통과 (인증 흐름 + 본인 페이지 + 모달)
   - tsc --noEmit 통과
-- Step 3: 카테고리 매핑 작업 ← 다음 작업 후보
-  - item_categories ↔ categories FK 추가
-  - 시드 매핑 적용
-- Step 4: 본격 신규 작업
+- Step 3: 카테고리 매핑 작업 ✅
+  - item_categories.category_id (FK → categories) 추가 — 라이브 DB 적용 완료
+  - 7개 매핑 시드 적용 완료 (콘솔 확인)
+  - SQL 자산 MVP-v2/ 로 정착: supabase/migrations/, supabase/seed/, schema.sql
+- Step 4: 본격 신규 작업 ← 다음 작업 후보
   - 화면 3 (매물 목록)
   - 화면 4 (상품 상세)
 
