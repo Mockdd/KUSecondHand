@@ -1539,6 +1539,7 @@ CREATE TABLE essential_packages (
     template_type  VARCHAR(50)      NOT NULL,
     name_ko        VARCHAR(200)     NOT NULL,
     name_en        VARCHAR(200)     NOT NULL,
+    country_code   VARCHAR(10)      NULL,
     region_group   VARCHAR(10)      NULL,
     housing_type   housing_type_t   NULL,
     created_at     TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
@@ -1549,6 +1550,7 @@ CREATE TABLE essential_packages (
 COMMENT ON TABLE  essential_packages              IS '패키지 템플릿 마스터 (DORM_BASIC / FLAT_FULL / INCOMING_DORM)';
 COMMENT ON COLUMN essential_packages.name_ko      IS '패키지 한국어 이름';
 COMMENT ON COLUMN essential_packages.name_en      IS '패키지 영어 이름';
+COMMENT ON COLUMN essential_packages.country_code IS 'NULL 이면 모든 국가 공통 템플릿. 지정 시 countries(country_code)와 매칭 (FK 미설정 — 비강제 결합).';
 COMMENT ON COLUMN essential_packages.region_group IS 'NULL 이면 전 지역 공통 템플릿';
 
 ALTER TABLE essential_packages ENABLE ROW LEVEL SECURITY;
