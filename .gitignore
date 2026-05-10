@@ -1,0 +1,34 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Next.js
+/.next/
+/out/
+
+# env (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# debug / OS
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# typescript
+*.tsbuildinfo
+
+# testing
+coverage/
+
+# misc
+*.pem
