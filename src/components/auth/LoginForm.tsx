@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isAllowedSchoolEmail } from '@/constants/schoolDomains'
+import { sanitizeNextPath } from '@/lib/safe-redirect-path'
 
 export function LoginForm() {
   const router = useRouter()
@@ -16,6 +17,7 @@ export function LoginForm() {
 
   const bannerWithdrawn = searchParams.get('withdrawn') === '1'
   const bannerReset = searchParams.get('reset') === 'ok'
+  const nextPath = sanitizeNextPath(searchParams.get('next'), '/products')
 
   useEffect(() => {
     if (searchParams.get('reason') === 'withdrawn') {
@@ -73,7 +75,7 @@ export function LoginForm() {
     await fetch('/api/auth/touch-activity', { method: 'POST', credentials: 'include' })
 
     setLoading(false)
-    router.push('/products')
+    router.push(nextPath)
     router.refresh()
   }
 
