@@ -100,12 +100,10 @@
   * 영향 받는 파일: app/dev/me, app/dev/logout, app/recommendations/result 등 server component
 - middleware.ts 위치: 루트가 아니라 `src/middleware.ts` 로 (src/ 사용 시 Next.js 규칙)
 
-## 알려진 schema-DB drift (옆 팀과 합의됨)
-- schema.sql 의 `yes_no_t` / `book_cover_t` → BOOLEAN 정의는 옆 팀 권장 조치 (schema 리뷰 #2)
-- 라이브 DB 는 아직 ENUM (`book_cover_t`, `yes_no_t`) 상태 — 마이그레이션 적용 시점 미정
-- 현재 코드/시드는 라이브 DB 기준 (ENUM) 으로 작성. 마이그레이션 적용 후 다음을 BOOLEAN 으로 일괄 정정:
-  * `src/lib/queries/types.ts` BookConditionData (cover_state / name_written / discoloration / page_damage)
-  * `supabase/seed/products_dev.sql` 섹션 3 (book_conditions INSERT 의 동일 4개 필드)
-  * 화면 4 (상품 상세) 의 책 항목 한글 매핑
-- `book_mark_t`: schema.sql 은 `'pen'`, 라이브 DB 는 `'pen_highlighter'` — **라이브 기준이 옳음** (디자인의 "볼펜/형광펜" 의미와 일치). 시드/타입 모두 `pen_highlighter` 사용.
-- schema.sql 자체는 옆 팀의 미래 의향이므로 본인 임의로 수정 X.
+## schema-DB drift — ✅ 해소 (2026-05-10)
+옆 팀이 main 에 BOOLEAN 마이그레이션 적용 (커밋 eea8b28) 후 본인 코드 정정 완료.
+- `book_conditions.cover_state / name_written / discoloration / page_damage` → BOOLEAN
+- `book_mark_t` enum 라벨 통일: `'pen_highlighter'` → `'pen'` (옆 팀 schema 기준)
+- 정정한 파일: `src/lib/queries/types.ts`, `src/lib/format.ts`, `src/app/products/[pid]/page.tsx`, `supabase/seed/products_dev.sql`
+- schema.sql / migrations 는 이미 BOOLEAN 으로 작성되어 있어 변경 불필요.
+- 시드 재실행 필요 (Supabase SQL Editor 에서 `products_dev.sql` 다시 실행).

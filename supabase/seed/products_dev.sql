@@ -1,10 +1,4 @@
 -- ============================================================
--- ⚠️ 임시 — 라이브 DB 의 ENUM 기준
--- 옆 팀의 yes_no_t / book_cover_t → BOOLEAN 마이그레이션 적용되면 이 시드 SQL 도 BOOLEAN 기준으로 정정 필요
--- 영향 범위: book_conditions 의 cover_state, name_written, discoloration, page_damage
--- (schema.sql line 82 주석 + 옆 팀 schema 리뷰 #2 참고)
--- ============================================================
--- ============================================================
 --  개발/테스트용 시드. 운영 데이터 별도.
 --
 --  대상 테이블:
@@ -397,24 +391,19 @@ SELECT p.pid, v.url, v.ord
 --  섹션 3. book_conditions — 7건
 --    대상: #2, #3, #4, #5, #6, #14, #15 (도서/교재 > 전공 교재 매물)
 --
---  컬럼 (⚠️ 라이브 DB 의 ENUM 기준 — schema.sql 의 BOOLEAN 정의는 옆 팀의 미래 의향):
---    underline_mark / handwriting  (book_mark_t  : none|pencil|pen_highlighter)
---    cover_state                   (book_cover_t : clean|not_clean)
---    name_written / discoloration  (yes_no_t     : yes|no)
---    page_damage                   (yes_no_t     : yes|no)
---
---  의미 매핑 (이전 BOOLEAN → 현재 ENUM):
---    cover_state    : TRUE  → 'clean'      / FALSE → 'not_clean'
---    name_written   : TRUE  → 'yes' (이름 기재됨)         / FALSE → 'no'
---    discoloration  : TRUE  → 'yes' (변색 있음)           / FALSE → 'no'
---    page_damage    : TRUE  → 'yes' (페이지 손상)         / FALSE → 'no'
+--  컬럼:
+--    underline_mark / handwriting  (book_mark_t  : none|pencil|pen)
+--    cover_state                   (BOOLEAN: TRUE = 깨끗함)
+--    name_written                  (BOOLEAN: TRUE = 이름 기재됨)
+--    discoloration                 (BOOLEAN: TRUE = 변색 있음)
+--    page_damage                   (BOOLEAN: TRUE = 페이지 손상)
 -- ============================================================
 
 -- #2 통계학 원론 — 거의 새책
 INSERT INTO book_conditions (pid, underline_mark, handwriting, cover_state, name_written, discoloration, page_damage)
 SELECT p.pid,
        'none'::book_mark_t, 'none'::book_mark_t,
-       'clean'::book_cover_t, 'no'::yes_no_t, 'no'::yes_no_t, 'no'::yes_no_t
+       TRUE, FALSE, FALSE, FALSE
   FROM products p
  WHERE p.title = '[DEV SEED] 통계학 원론 (제5판) 거의 새책';
 
@@ -422,15 +411,15 @@ SELECT p.pid,
 INSERT INTO book_conditions (pid, underline_mark, handwriting, cover_state, name_written, discoloration, page_damage)
 SELECT p.pid,
        'pencil'::book_mark_t, 'pencil'::book_mark_t,
-       'clean'::book_cover_t, 'no'::yes_no_t, 'no'::yes_no_t, 'no'::yes_no_t
+       TRUE, FALSE, FALSE, FALSE
   FROM products p
  WHERE p.title = '[DEV SEED] Database System Concepts 7판';
 
 -- #4 핸즈온 ML — 펜 필기 多
 INSERT INTO book_conditions (pid, underline_mark, handwriting, cover_state, name_written, discoloration, page_damage)
 SELECT p.pid,
-       'pen_highlighter'::book_mark_t, 'pen_highlighter'::book_mark_t,
-       'clean'::book_cover_t, 'no'::yes_no_t, 'no'::yes_no_t, 'no'::yes_no_t
+       'pen'::book_mark_t, 'pen'::book_mark_t,
+       TRUE, FALSE, FALSE, FALSE
   FROM products p
  WHERE p.title = '[DEV SEED] 핸즈온 머신러닝 2판 (필기 多)';
 
@@ -438,23 +427,23 @@ SELECT p.pid,
 INSERT INTO book_conditions (pid, underline_mark, handwriting, cover_state, name_written, discoloration, page_damage)
 SELECT p.pid,
        'pencil'::book_mark_t, 'none'::book_mark_t,
-       'clean'::book_cover_t, 'no'::yes_no_t, 'no'::yes_no_t, 'no'::yes_no_t
+       TRUE, FALSE, FALSE, FALSE
   FROM products p
  WHERE p.title = '[DEV SEED] ISLR (An Introduction to Statistical Learning)';
 
 -- #6 통계학개론 정의용 — 펜 밑줄 多, 변색 있음
 INSERT INTO book_conditions (pid, underline_mark, handwriting, cover_state, name_written, discoloration, page_damage)
 SELECT p.pid,
-       'pen_highlighter'::book_mark_t, 'pencil'::book_mark_t,
-       'clean'::book_cover_t, 'no'::yes_no_t, 'yes'::yes_no_t, 'no'::yes_no_t
+       'pen'::book_mark_t, 'pencil'::book_mark_t,
+       TRUE, FALSE, TRUE, FALSE
   FROM products p
  WHERE p.title = '[DEV SEED] 통계학개론 정의용 4판 (밑줄 多)';
 
 -- #14 통계 추론 — 연필+펜 일부
 INSERT INTO book_conditions (pid, underline_mark, handwriting, cover_state, name_written, discoloration, page_damage)
 SELECT p.pid,
-       'pencil'::book_mark_t, 'pen_highlighter'::book_mark_t,
-       'clean'::book_cover_t, 'no'::yes_no_t, 'no'::yes_no_t, 'no'::yes_no_t
+       'pencil'::book_mark_t, 'pen'::book_mark_t,
+       TRUE, FALSE, FALSE, FALSE
   FROM products p
  WHERE p.title = '[DEV SEED] 통계 추론 (Casella & Berger)';
 
@@ -462,7 +451,7 @@ SELECT p.pid,
 INSERT INTO book_conditions (pid, underline_mark, handwriting, cover_state, name_written, discoloration, page_damage)
 SELECT p.pid,
        'none'::book_mark_t, 'pencil'::book_mark_t,
-       'clean'::book_cover_t, 'no'::yes_no_t, 'no'::yes_no_t, 'no'::yes_no_t
+       TRUE, FALSE, FALSE, FALSE
   FROM products p
  WHERE p.title = '[DEV SEED] 데이터베이스 시스템 — 한빛아카데미';
 

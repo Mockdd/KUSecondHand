@@ -93,28 +93,26 @@ export function formatPrice(price: number): string {
 
 // ─── 화면 4 (상품 상세) 책/기기 상태 매핑 ────────────────────────────
 //
-// 라이브 DB 의 ENUM 값(book_mark_t / book_cover_t / yes_no_t / grade_hml_t /
-// device_op_t / included_t / accessories_t) 을 화면 표시 한글로 매핑한다.
-// 옆 팀의 BOOLEAN 마이그레이션이 적용되면 yes_no_t / book_cover_t 두 매핑은
-// 제거되고 BOOLEAN 분기로 교체될 예정 (CLAUDE.md '알려진 schema-DB drift' 참조).
+// book_mark_t / grade_hml_t / device_op_t / included_t / accessories_t 는 ENUM,
+// cover_state / name_written / discoloration / page_damage 는 BOOLEAN.
 
 /** DB enum: book_mark_t — 밑줄/필기 흔적 */
 export const BOOK_MARK_KO: Record<BookConditionData['underline_mark'], string> = {
   none: '없음',
   pencil: '연필/샤프',
-  pen_highlighter: '볼펜/형광펜',
+  pen: '볼펜/형광펜',
 }
 
-/** DB enum: book_cover_t — 겉표지 */
-export const BOOK_COVER_KO: Record<BookConditionData['cover_state'], string> = {
-  clean: '깨끗함',
-  not_clean: '깨끗하지 않음',
+/** BOOLEAN cover_state — 겉표지 */
+export const BOOK_COVER_KO: Record<'true' | 'false', string> = {
+  true: '깨끗함',
+  false: '깨끗하지 않음',
 }
 
-/** DB enum: yes_no_t — 이름 기입/변색/훼손 공통 */
-export const YES_NO_KO: Record<BookConditionData['name_written'], string> = {
-  yes: '있음',
-  no: '없음',
+/** BOOLEAN name_written/discoloration/page_damage 공통 */
+export const YES_NO_KO: Record<'true' | 'false', string> = {
+  true: '있음',
+  false: '없음',
 }
 
 /** DB enum: grade_hml_t — 사용감/청결도 */
@@ -149,12 +147,15 @@ export const ACCESSORIES_KO: Record<DeviceConditionData['accessories'], string> 
  * options 는 표시 순서 배열, map 은 그 옵션의 한글 라벨.
  * key 와 options 원소 타입을 매핑 분포(distributive)로 묶어 type-safe.
  */
+// boolean 컬럼은 매핑 키를 'true' / 'false' 문자열로 정규화 (Record 키 제약 회피).
+type MapKey<T> = T extends boolean ? 'true' | 'false' : T extends string ? T : never
+
 export type BookFieldDef = {
   [K in keyof BookConditionData]: {
     key: K
     label: string
     options: BookConditionData[K][]
-    map: Record<BookConditionData[K], string>
+    map: Record<MapKey<BookConditionData[K]>, string>
   }
 }[keyof BookConditionData]
 
@@ -169,12 +170,12 @@ export type DeviceFieldDef = {
 
 /** 화면 4 책 상태 6항목 — 표시 순서 고정 (목업 기준) */
 export const BOOK_FIELDS: BookFieldDef[] = [
-  { key: 'underline_mark', label: '밑줄 흔적',  options: ['none', 'pencil', 'pen_highlighter'], map: BOOK_MARK_KO },
-  { key: 'handwriting',    label: '필기 흔적',  options: ['none', 'pencil', 'pen_highlighter'], map: BOOK_MARK_KO },
-  { key: 'cover_state',    label: '겉표지',     options: ['clean', 'not_clean'],                 map: BOOK_COVER_KO },
-  { key: 'name_written',   label: '이름 기입',  options: ['no', 'yes'],                          map: YES_NO_KO },
-  { key: 'discoloration',  label: '페이지 변색', options: ['yes', 'no'],                         map: YES_NO_KO },
-  { key: 'page_damage',    label: '페이지 훼손', options: ['yes', 'no'],                         map: YES_NO_KO },
+  { key: 'underline_mark', label: '밑줄 흔적',  options: ['none', 'pencil', 'pen'], map: BOOK_MARK_KO },
+  { key: 'handwriting',    label: '필기 흔적',  options: ['none', 'pencil', 'pen'], map: BOOK_MARK_KO },
+  { key: 'cover_state',    label: '겉표지',     options: [true, false],             map: BOOK_COVER_KO },
+  { key: 'name_written',   label: '이름 기입',  options: [false, true],             map: YES_NO_KO },
+  { key: 'discoloration',  label: '페이지 변색', options: [true, false],             map: YES_NO_KO },
+  { key: 'page_damage',    label: '페이지 훼손', options: [true, false],             map: YES_NO_KO },
 ]
 
 /** 화면 4 기기 상태 5항목 — 표시 순서 고정 (목업 기준) */

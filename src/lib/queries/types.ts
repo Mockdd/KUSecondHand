@@ -117,22 +117,19 @@ export interface ProductListItem {
 /**
  * 도서 매물 상세 상태 — book_conditions 1:0..1.
  * 도서 매물이 아니거나 등록 안 된 경우 ProductDetail.book_condition = null.
- *
- * ⚠️ TODO — 옆 팀의 BOOLEAN 마이그레이션 적용 시 정정 필요
- *   yes_no_t, book_cover_t → BOOLEAN 으로 변경 예정
- *   영향: cover_state, name_written, discoloration, page_damage 4개 필드
- *   참고: schema.sql line 82 주석 + 옆 팀 schema 리뷰 #2
  */
 export interface BookConditionData {
   // DB enum: book_mark_t.
-  underline_mark: 'none' | 'pencil' | 'pen_highlighter'
-  handwriting:    'none' | 'pencil' | 'pen_highlighter'
-  // DB enum: book_cover_t.
-  cover_state:    'clean' | 'not_clean'
-  // DB enum: yes_no_t.
-  name_written:   'yes' | 'no'
-  discoloration:  'yes' | 'no'
-  page_damage:    'yes' | 'no'
+  underline_mark: 'none' | 'pencil' | 'pen'
+  handwriting:    'none' | 'pencil' | 'pen'
+  // BOOLEAN: TRUE = 깨끗함
+  cover_state:    boolean
+  // BOOLEAN: TRUE = 이름 기재됨
+  name_written:   boolean
+  // BOOLEAN: TRUE = 변색 있음
+  discoloration:  boolean
+  // BOOLEAN: TRUE = 페이지 손상 있음
+  page_damage:    boolean
 }
 
 /**

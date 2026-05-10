@@ -348,7 +348,7 @@ function BookConditionList({ data }: { data: BookConditionData }) {
             <span className="text-gray-700">{f.label}</span>
             <span>
               {f.options.map((opt, i) => (
-                <Fragment key={opt}>
+                <Fragment key={String(opt)}>
                   {i > 0 && <span className="text-gray-300"> | </span>}
                   <span
                     className={
@@ -357,7 +357,7 @@ function BookConditionList({ data }: { data: BookConditionData }) {
                         : 'text-gray-300'
                     }
                   >
-                    {(f.map as Record<string, string>)[opt]}
+                    {(f.map as Record<string, string>)[String(opt)]}
                   </span>
                 </Fragment>
               ))}
