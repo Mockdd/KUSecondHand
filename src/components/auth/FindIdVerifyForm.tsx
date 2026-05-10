@@ -3,7 +3,12 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { normalizeOtp } from '@/lib/auth/validate'
+import {
+  normalizeOtp,
+  OTP_DIGIT_MAX,
+  OTP_INPUT_PLACEHOLDER,
+  validateOtpDigits,
+} from '@/lib/auth/validate'
 
 type Props = {
   email: string
@@ -43,8 +48,9 @@ export function FindIdVerifyForm({ email }: Props) {
     e.preventDefault()
     setError(null)
     const code = normalizeOtp(otp)
-    if (code.length !== 6) {
-      setError('인증번호 6자리를 입력하세요.')
+    const otpErr = validateOtpDigits(code)
+    if (otpErr) {
+      setError(otpErr)
       return
     }
 
@@ -103,16 +109,16 @@ export function FindIdVerifyForm({ email }: Props) {
       ) : null}
       <div>
         <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
-          인증번호 (6자리)
+          인증번호 (메일과 동일)
         </label>
         <input
           id="otp"
           inputMode="numeric"
           autoComplete="one-time-code"
-          maxLength={6}
+          maxLength={OTP_DIGIT_MAX}
           value={otp}
           onChange={(e) => setOtp(normalizeOtp(e.target.value))}
-          placeholder="000000"
+          placeholder={OTP_INPUT_PLACEHOLDER}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 tracking-widest text-center text-lg font-mono shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           disabled={loading}
         />

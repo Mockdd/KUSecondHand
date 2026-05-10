@@ -1,7 +1,13 @@
 const NICKNAME_MIN = 2
 const NICKNAME_MAX = 50
 const PASSWORD_MIN = 8
-const OTP_LEN = 6
+
+/** 이메일 OTP 숫자 자릿수 — Supabase/GoTrue 버전에 따라 6 또는 8자리 등으로 올 수 있음 */
+export const OTP_DIGIT_MIN = 6
+export const OTP_DIGIT_MAX = 10
+
+/** 인증번호 입력칸 placeholder (시각적 8칸 — 메일 8자리 OTP와 맞춤) */
+export const OTP_INPUT_PLACEHOLDER = '00000000'
 
 export function validatePassword(password: string): string | null {
   if (password.length < PASSWORD_MIN) {
@@ -29,7 +35,16 @@ export function validateStudentId(id: string): string | null {
 }
 
 export function normalizeOtp(token: string): string {
-  return token.replace(/\D/g, '').slice(0, OTP_LEN)
+  return token.replace(/\D/g, '').slice(0, OTP_DIGIT_MAX)
+}
+
+/** 숫자만 남긴 인증번호 길이 검사 (이메일에 온 그대로 입력) */
+export function validateOtpDigits(code: string): string | null {
+  const n = code.length
+  if (n < OTP_DIGIT_MIN || n > OTP_DIGIT_MAX) {
+    return `메일에 온 숫자 인증번호를 입력하세요. (${OTP_DIGIT_MIN}~${OTP_DIGIT_MAX}자리)`
+  }
+  return null
 }
 
 export const PASSWORD_MIN_LENGTH = PASSWORD_MIN

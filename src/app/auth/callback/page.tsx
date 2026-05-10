@@ -53,7 +53,7 @@ function CallbackInner() {
           searchParams.get('error_description') ?? searchParams.get('error')
         let msg =
           oauthErr ??
-          '링크가 만료되었거나 이미 사용되었습니다. 메일 본문의 6자리 인증번호를 입력해서 진행해 주세요.'
+          '링크가 만료되었거나 이미 사용되었습니다. 메일 본문의 숫자 인증번호를 입력해서 진행해 주세요.'
         if (typeof window !== 'undefined') {
           const h = window.location.hash
           if (h.includes('error_code') || h.includes('error_description')) {

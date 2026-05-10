@@ -1,3 +1,8 @@
+/**
+ * Next.js: `middleware.ts`와 함께 두면 빌드/개발이 실패합니다.
+ * 엣지에서 세션 갱신·라우트 보호는 이 파일의 `proxy`만 사용합니다.
+ * @see https://nextjs.org/docs/messages/middleware-to-proxy
+ */
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 

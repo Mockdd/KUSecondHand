@@ -26,7 +26,7 @@ type Body = {
 
 /**
 
- * 이메일 **6자리 OTP 발송만** 의도함 (앱에서는 `verifyOtp` 로 확인).
+ * 이메일 OTP 발송 (앱에서는 `verifyOtp` + `type: 'email'` 로 확인).
 
  *
 
@@ -36,13 +36,13 @@ type Body = {
 
  *
 
- * Supabase Dashboard → Authentication → Email templates → **Magic Link**(또는 같은 메일)·본문에서
+ * Supabase Dashboard → Authentication → Email templates → **Magic Link** (OTP 메일)
 
- * - 반드시: `{{ .Token }}`
+ * - **제목(Subject):** 예) `KUSecondHand 인증번호입니다` — 기본 "Your Magic Link" 대신 여기서 수정
 
- * - **회원가입은 링크 제거 추천:** `{{ .ConfirmationURL }}` 블록/버튼은 삭제하거나 두지 마세요.
+ * - **본문:** 반드시 `{{ .Token }}` (인증번호 길이는 프로젝트 설정에 따라 6·8자리 등일 수 있음)
 
- *   그러면 사용자에게 도착하는 것은 번호 안내 형태만 됩니다.
+ * - **링크 제거:** `{{ .ConfirmationURL }}` 는 빼면 숫자 인증만 안내할 수 있음
 
  */
 
