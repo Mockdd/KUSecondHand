@@ -41,7 +41,7 @@ export default async function ProductsPage() {
     )
   }
 
-  const products = (rows ?? []) as ProductRow[]
+  const products = (rows ?? []) as unknown as ProductRow[]
 
   return (
     <div>

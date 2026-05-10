@@ -30,7 +30,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     notFound()
   }
 
-  const row = data as {
+  const row = data as unknown as {
     title: string
     price: number
     description: string | null
