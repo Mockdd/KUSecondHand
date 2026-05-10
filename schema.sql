@@ -1373,14 +1373,22 @@ CREATE TABLE item_categories (
     name              VARCHAR(100)          NOT NULL,
     type              item_category_type_t  NOT NULL,
     description       TEXT                  NULL,
+    category_id       INTEGER               NULL,
 
-    CONSTRAINT uq_item_categories_name UNIQUE (name)
+    CONSTRAINT uq_item_categories_name UNIQUE (name),
+    CONSTRAINT fk_item_categories_category
+        FOREIGN KEY (category_id)
+        REFERENCES  categories (category_id)
+        ON DELETE SET NULL
+        ON UPDATE RESTRICT
 );
 
-CREATE INDEX idx_item_categories_type ON item_categories (type);
+CREATE INDEX idx_item_categories_type     ON item_categories (type);
+CREATE INDEX idx_item_categories_category ON item_categories (category_id);
 
-COMMENT ON TABLE  item_categories      IS '추천 물품 카테고리 — 기존 categories(상품용)와 분리';
-COMMENT ON COLUMN item_categories.type IS 'ENUM: BOOK | DEVICE | ETC';
+COMMENT ON TABLE  item_categories             IS '추천 물품 카테고리 — 기존 categories(상품용)와 분리';
+COMMENT ON COLUMN item_categories.type        IS 'ENUM: BOOK | DEVICE | ETC';
+COMMENT ON COLUMN item_categories.category_id IS '연결된 상품 카테고리 ID (FK → categories). NULL 이면 추천 결과의 [상품 보러가기] 버튼은 비활성.';
 
 ALTER TABLE item_categories ENABLE ROW LEVEL SECURITY;
 
