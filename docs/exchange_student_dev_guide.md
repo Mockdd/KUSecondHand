@@ -767,7 +767,7 @@ VALUES
 
 ---
 
-## 9. Phase 1 + Phase 2 구현 현황 (2026-05-07 기준)
+## 9. 구현 현황 (2026-05-11 최신)
 
 ### 9.0 완료된 파일 목록
 
@@ -791,7 +791,7 @@ VALUES
 | 페이지 | `src/app/(exchange)/packages/[id]/page.tsx` | 패키지 상세 |
 | 페이지 | `src/app/(exchange)/sell/template/page.tsx` | 템플릿 선택 + SellStepHeader(1/3) |
 | 페이지 | `src/app/(exchange)/sell/register/page.tsx` | 보유 물품 체크 + SellStepHeader(2/3), packageId별 mock, 판매 학기 라벨 |
-| 페이지 | `src/app/(exchange)/sell/hygiene/page.tsx` | 세탁 인증 + SellStepHeader(3/3), 완료 시 게시 CTA |
+| 페이지 | `src/app/(main)/sell/hygiene/page.tsx` | ❌ 세탁 인증 제거됨 — /sell/template 로 redirect |
 | 페이지 | `src/app/(exchange)/chat/page.tsx` | 채팅 목록 (mock: room1=바이어/Emma, room2=셀러/Lucas) |
 | 페이지 | `src/app/(exchange)/chat/[id]/page.tsx` | 채팅방 (Realtime + 번역, 미로그인 mock 포함) |
 | 페이지 | `src/app/(exchange)/wishlist/page.tsx` | 알림 신청 목록 |
@@ -799,6 +799,13 @@ VALUES
 | API | `src/app/api/chat/send/route.ts` | 번역 채팅 전송 |
 | API | `src/app/api/matches/complete/route.ts` | 거래 완료 처리 |
 | API | `src/app/api/matches/auto/route.ts` | **[Phase 2]** 자동 매칭 (운영 시 cron 연동 필요) |
+| 유틸 | `src/lib/openai/embeddings.ts` | OpenAI text-embedding-3-small 래퍼 |
+| 유틸 | `src/lib/search/hybridSearch.ts` | pgvector + pg_trgm RRF hybrid search |
+| API | `src/app/api/search/products/route.ts` | 매물 hybrid search (GET ?q=) |
+| API | `src/app/api/search/packages/route.ts` | 패키지 hybrid search (GET ?q=) |
+| 페이지 | `src/app/(main)/search/page.tsx` | 검색 페이지 (일반: 매물만 / 교환학생: 매물+패키지 탭) |
+| DB | `db/migrations/007_package_matches_price.sql` | package_matches.price 컬럼 추가 |
+| DB | `db/migrations/008_search_embeddings.sql` | pgvector·pg_trgm 확장, embedding 테이블, RPC 함수 4개 |
 
 ### 9.1 개발 미리보기 mock 현황
 
@@ -806,20 +813,19 @@ VALUES
 
 ### 9.1.1 셀 플로우 UX
 
-세 페이지가 `SellStepHeader` 컴포넌트로 연결되어 하나의 등록 플로우로 표시됨.
+두 페이지가 `SellStepHeader` 컴포넌트로 연결. 세탁 인증 스텝 제거됨.
 
 ```
 홈 → 패키지 등록하기
   Step 1: /sell/template  — 템플릿 3종 선택
-  Step 2: /sell/register  — 물품 체크 (세탁 인증 필요 시 Step 3으로 안내)
-  Step 3: /sell/hygiene   — 세탁 인증 (완료 시 Step 2로 돌아가 게시)
+  Step 2: /sell/register  — 물품 체크 + 학기 + 희망 가격 입력 → 게시
 ```
 
 | 페이지 | mock 내용 |
 |--------|-----------|
 | `/sell/template` | 3개 템플릿 (기숙사 기본 9개 / 자취 풀 15개 / 고려대 기숙사 12개) |
 | `/sell/register` | packageId별 다른 물품: 1→9개, 2→15개, 3→12개 |
-| `/sell/hygiene` | 이불(approved), 베개(pending), 토퍼(없음) |
+| `/sell/hygiene` | ❌ 제거됨. /sell/template redirect |
 | `/chat` | room1=바이어/Emma(pending), room2=셀러/Lucas(matched) |
 | `/chat/1` | 바이어 뷰, 메시지 없음 |
 | `/chat/2` | 셀러 뷰, 대화 3개, 번역 ON/OFF, 거래완료 버튼 |

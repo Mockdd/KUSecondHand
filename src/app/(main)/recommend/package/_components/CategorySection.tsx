@@ -25,7 +25,7 @@ export function CategorySection({ category, selectedPids, onToggle }: Props) {
           아직 매물이 없어요
         </p>
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-1">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {category.products.map((product) => (
             <ProductCard
               key={product.pid}

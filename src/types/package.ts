@@ -18,7 +18,6 @@ export type CategoryRow = Database['public']['Tables']['categories']['Row']
 
 export type TemplateType = 'DORM_BASIC' | 'FLAT_FULL' | 'INCOMING_DORM'
 export type ListingStatus = 'selling' | 'reserved' | 'sold'
-export type CertStatus = 'pending' | 'approved' | 'rejected'
 
 // ──────────────────────────────────────────────────────────────────────────────
 // 패키지 템플릿
@@ -45,7 +44,6 @@ export interface PackageItem {
   category_id: number
   is_required: boolean
   priority_order: number
-  requires_hygiene_cert: boolean
 }
 
 /** 카테고리명을 JOIN한 패키지 물품 (화면 표시용) */
@@ -53,10 +51,9 @@ export interface PackageItemWithCategory extends PackageItem {
   category_name: string
 }
 
-/** 패키지 상세 화면용 — 셀러 보유 여부, 인증 상태 포함 */
+/** 패키지 상세 화면용 — 셀러 보유 여부 포함 */
 export interface PackageItemDetail extends PackageItemWithCategory {
   is_owned: boolean
-  hygiene_cert_status: CertStatus | null
   /** 미보유 물품의 일반 매물 (보완 시스템) */
   supplement_products?: SupplementProduct[]
 }
@@ -72,7 +69,6 @@ export interface PackageListing {
   category_id: number
   status: ListingStatus
   semester: string
-  cert_id: number | null
   image_url: string | null
   created_at: string
   updated_at: string
@@ -92,9 +88,10 @@ export interface SellerWithScore {
   owned_count: number
   total_count: number
   ownership_rate: number
-  hygiene_cert_rate: number
-  /** 최종 점수 = 보유율 * 0.7 + 세탁인증 비율 * 0.3 */
+  /** 최종 점수 = 보유율 */
   score: number
+  /** 셀러가 제시한 패키지 총 가격. null = 미설정 */
+  price: number | null
   /** 이미 바이어가 이 셀러에게 요청한 매칭이 있는지 */
   already_requested: boolean
   /** already_requested=true 일 때 연결된 채팅방 ID */

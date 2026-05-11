@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     // 2. 요청 파싱
     const body = (await request.json()) as {
       room_id: number
-      match_id: number
+      match_id?: number | null
       content: string
       source_lang: LanguagePrefEnum
       target_lang: LanguagePrefEnum
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     const { room_id, match_id, content, source_lang, target_lang } = body
 
-    if (!room_id || !match_id || !content?.trim()) {
+    if (!room_id || !content?.trim()) {
       return NextResponse.json(
         { data: null, error: { code: 'INVALID_REQUEST', message: '필수 파라미터가 없어요' } },
         { status: 400 }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // 3. 채팅방 참여자 확인
     const { data: participant } = await supabase
       .from('chat_participants')
-      .select('id')
+      .select('cp_id')
       .eq('room_id', room_id)
       .eq('uid', user.id)
       .maybeSingle()
@@ -79,12 +79,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 6. pending → matched 상태 업데이트 (첫 메시지 전송 시)
-    await supabase
-      .from('package_matches')
-      .update({ status: 'matched' })
-      .eq('match_id', match_id)
-      .eq('status', 'pending')
+    // 6. pending → matched 상태 업데이트 (패키지 채팅방 첫 메시지 전송 시)
+    if (match_id) {
+      await supabase
+        .from('package_matches')
+        .update({ status: 'matched' })
+        .eq('match_id', match_id)
+        .eq('status', 'pending')
+    }
 
     return NextResponse.json({
       data: {
