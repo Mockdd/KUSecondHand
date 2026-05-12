@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { ResalePriceResult } from '@/types/recommend'
 
 interface Props {
@@ -74,6 +75,14 @@ export function ResalePriceResultView({ result }: Props) {
       <p className="text-center text-xs text-gray-400">
         실제 거래 가격은 상품 상태에 따라 달라질 수 있어요.
       </p>
+
+      <Link
+        href={`/products/new?price=${result.recommended_price}`}
+        className="block w-full rounded-lg py-2.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        style={{ backgroundColor: '#8B0029' }}
+      >
+        이 가격으로 상품 등록하기 →
+      </Link>
     </div>
   )
 }

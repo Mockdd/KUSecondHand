@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 type Category = { category_id: number; parent_id: number | null; name: string }
@@ -18,11 +19,12 @@ const CONDITION_OPTIONS = [
 
 export default function NewProductPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const [tab, setTab] = useState<Tab>('product')
 
   const [title, setTitle] = useState('')
-  const [price, setPrice] = useState('')
+  const [price, setPrice] = useState(searchParams.get('price') ?? '')
   const [condition, setCondition] = useState('')
   const [selectedParent, setSelectedParent] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -204,6 +206,12 @@ export default function NewProductPage() {
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">원</span>
             </div>
+            <p className="mt-1 text-xs text-gray-400">
+              적정 가격을 모르시나요?{' '}
+              <Link href="/recommend/resale-price" className="text-[#8B0029] hover:underline">
+                시세 추천 확인 →
+              </Link>
+            </p>
           </div>
 
           {/* 상태 */}

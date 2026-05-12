@@ -434,7 +434,14 @@ export default function ChatRoomPage() {
         <p className="text-xs text-gray-400 ml-6">
           {isPackageRoom
             ? (STATUS_LABEL[matchStatus ?? ''] ?? matchStatus)
-            : displayRoomInfo.product_title}
+            : (
+              <Link
+                href={`/products/${displayRoomInfo.product_id}`}
+                className="hover:underline hover:text-gray-600"
+              >
+                {displayRoomInfo.product_title} →
+              </Link>
+            )}
         </p>
 
         {/* 패키지 채팅방 액션 버튼 */}

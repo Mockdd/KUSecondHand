@@ -4,9 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 interface Props {
   pid: string
+  compact?: boolean
 }
 
-export function WishlistButton({ pid }: Props) {
+export function WishlistButton({ pid, compact = false }: Props) {
   const queryClient = useQueryClient()
 
   const { data: wishlisted = false } = useQuery({
@@ -46,6 +47,25 @@ export function WishlistButton({ pid }: Props) {
   })
 
   const isPending = addMutation.isPending || removeMutation.isPending
+
+  if (compact) {
+    return (
+      <button
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          wishlisted ? removeMutation.mutate() : addMutation.mutate()
+        }}
+        disabled={isPending}
+        aria-label={wishlisted ? '찜 해제' : '찜하기'}
+        className={`flex h-8 w-8 items-center justify-center rounded-full shadow-md transition-colors disabled:opacity-40 ${
+          wishlisted ? 'bg-red-50 text-red-500' : 'bg-white text-gray-400 hover:text-red-400'
+        }`}
+      >
+        <span className="text-base leading-none">{wishlisted ? '♥' : '♡'}</span>
+      </button>
+    )
+  }
 
   return (
     <button

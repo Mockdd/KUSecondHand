@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { TrustBadge } from '@/components/trust/TrustBadge'
+import { WishlistButton } from '@/components/wishlist/WishlistButton'
 import { createClient } from '@/lib/supabase/server'
 import { isTrustedSeller } from '@/lib/trust/constants'
 import { productListSelect } from '@/lib/products/sellerEmbed'
@@ -53,7 +54,7 @@ export default async function ProductsPage() {
           return (
             <li
               key={p.pid}
-              className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+              className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
             >
               <Link href={`/products/${p.pid}`} className="block">
                 <div className="relative aspect-[4/3] bg-gray-100">
@@ -84,6 +85,9 @@ export default async function ProductsPage() {
                   ) : null}
                 </div>
               </Link>
+              <div className="absolute right-2 top-2">
+                <WishlistButton pid={p.pid} compact />
+              </div>
             </li>
           )
         })}
