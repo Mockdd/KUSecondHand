@@ -1,13 +1,15 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 /**
  * 텍스트를 1536차원 embedding 벡터로 변환
  * 모델: text-embedding-3-small ($0.02/1M tokens)
  */
 export async function createEmbedding(text: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
+  const response = await getOpenAI().embeddings.create({
     model: 'text-embedding-3-small',
     input: text.slice(0, 8000), // 토큰 한도 방어
   })
