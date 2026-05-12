@@ -2202,6 +2202,7 @@ INSERT INTO manner_keywords (label) VALUES
 
 -- ── Seed: countries (23개 지역 그룹 — 기획안 기준) ──────────────
 INSERT INTO countries (country_code, name_ko, name_en, region_group) VALUES
+    ('KR',      '한국',              'Korea',               'KR'),
     ('E1',      '영어권 유럽',       'Anglophone Europe',   'E1'),
     ('E2',      '프랑스어권',        'Francophone',         'E2'),
     ('E3',      '독일어권',          'German-speaking',     'E3'),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { productListSelect } from '@/lib/products/sellerEmbed'
+import { createEmbedding, buildProductEmbeddingText } from '@/lib/openai/embeddings'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -23,6 +24,65 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  // TODO: Phase 3 — 상품 등록
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 })
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 })
+
+  const body = await request.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: '잘못된 요청입니다.' }, { status: 400 })
+
+  const { title, price, condition, category_id, description, image_urls } = body as {
+    title: string
+    price: number
+    condition: string
+    category_id: number
+    description?: string
+    image_urls?: string[]
+  }
+
+  if (!title?.trim()) return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 })
+  if (typeof price !== 'number' || price < 0) return NextResponse.json({ error: '올바른 가격을 입력해주세요.' }, { status: 400 })
+  if (!condition) return NextResponse.json({ error: '상품 상태를 선택해주세요.' }, { status: 400 })
+  if (!category_id) return NextResponse.json({ error: '카테고리를 선택해주세요.' }, { status: 400 })
+
+  const { data: product, error: productError } = await supabase
+    .from('products')
+    .insert({
+      seller_uid: user.id,
+      title: title.trim(),
+      price,
+      condition,
+      category_id,
+      description: description?.trim() || null,
+    })
+    .select('pid')
+    .single()
+
+  if (productError) return NextResponse.json({ error: productError.message }, { status: 500 })
+
+  if (image_urls && image_urls.length > 0) {
+    const images = image_urls.map((url, i) => ({
+      pid: product.pid,
+      image_url: url,
+      display_order: i,
+    }))
+    const { error: imgError } = await supabase.from('product_images').insert(images)
+    if (imgError) return NextResponse.json({ error: imgError.message }, { status: 500 })
+  }
+
+  // embedding 생성 (실패해도 등록은 완료 — 검색에서만 누락)
+  try {
+    const embeddingText = buildProductEmbeddingText(title.trim(), description)
+    const embedding = await createEmbedding(embeddingText)
+    await supabase.from('product_embeddings').upsert({
+      pid: product.pid,
+      embedding: JSON.stringify(embedding),
+      embedded_at: new Date().toISOString(),
+    })
+  } catch (embErr) {
+    console.error('[api/products] embedding 생성 실패:', embErr)
+  }
+
+  return NextResponse.json({ pid: product.pid }, { status: 201 })
 }

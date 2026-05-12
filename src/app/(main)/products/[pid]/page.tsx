@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { TrustBadge } from '@/components/trust/TrustBadge'
+import { WishlistButton } from '@/components/wishlist/WishlistButton'
+import { ChatButton } from '@/components/chat/ChatButton'
 import { createClient } from '@/lib/supabase/server'
 import { isTrustedSeller } from '@/lib/trust/constants'
 import { productDetailSelect } from '@/lib/products/sellerEmbed'
@@ -71,6 +73,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <h1 className="text-2xl font-bold text-gray-900">{row.title}</h1>
           <p className="text-xl font-semibold">{row.price.toLocaleString()}원</p>
           <p className="text-sm text-gray-600">상태: {row.condition}</p>
+
+          <WishlistButton pid={pid} />
+          {seller && <ChatButton pid={pid} sellerUid={seller.uid} />}
 
           {seller ? (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">

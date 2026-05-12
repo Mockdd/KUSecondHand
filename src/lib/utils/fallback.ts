@@ -60,12 +60,12 @@ export const getPackageWithFallback = async (
     }
   }
 
-  // ── 3순위: 범용 패키지 (region_group IS NULL, housing_type IS NULL) ────────
+  // ── 3순위: region_group 무관, housing_type만 일치 ─────────────────────────
   const { data: tier3, error: err3 } = await supabase
     .from('essential_packages')
     .select('*')
     .is('region_group', null)
-    .is('housing_type', null)
+    .or(`housing_type.eq.${housingType},housing_type.is.null`)
     .order('package_id', { ascending: true })
     .limit(1)
     .maybeSingle()
@@ -77,6 +77,26 @@ export const getPackageWithFallback = async (
   if (tier3) {
     return {
       data: tier3 as EssentialPackage,
+      tier: 3,
+      label: '전체 범용 패키지',
+    }
+  }
+
+  // ── 4순위: housing_type IS NULL (완전 범용) ───────────────────────────────
+  const { data: tier4, error: err4 } = await supabase
+    .from('essential_packages')
+    .select('*')
+    .is('region_group', null)
+    .is('housing_type', null)
+    .order('package_id', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (err4) console.error('[fallback] 4순위 조회 실패:', err4)
+
+  if (tier4) {
+    return {
+      data: tier4 as EssentialPackage,
       tier: 3,
       label: '전체 범용 패키지',
     }

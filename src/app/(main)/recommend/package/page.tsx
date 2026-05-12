@@ -15,17 +15,15 @@ export default async function PackageRecommendPage() {
     .single()
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900">내 학기 패키지 추천</h1>
-        <p className="mb-6 text-sm text-gray-500">
-          학과·학년·거주 형태를 기반으로 필요한 물품을 한눈에 볼 수 있어요.
-        </p>
-        <PackageRecommendationClient
-          majorId={profile?.major_id ?? null}
-          grade={profile?.grade ?? null}
-        />
-      </div>
-    </main>
+    <div>
+      <h1 className="mb-2 text-2xl font-bold text-gray-900">내 학기 패키지 추천</h1>
+      <p className="mb-6 text-sm text-gray-500">
+        학과·학년·거주 형태를 기반으로 필요한 물품을 한눈에 볼 수 있어요.
+      </p>
+      <PackageRecommendationClient
+        majorId={profile?.major_id ?? null}
+        grade={profile?.grade ?? null}
+      />
+    </div>
   )
 }

@@ -11,7 +11,7 @@ export function ProductCard({ product, selected = false, onToggle }: Props) {
   return (
     <div
       onClick={onToggle}
-      className={`relative flex w-36 shrink-0 cursor-pointer flex-col overflow-hidden rounded-lg border transition-all ${
+      className={`relative flex cursor-pointer flex-col overflow-hidden rounded-lg border transition-all ${
         selected
           ? 'border-blue-500 ring-2 ring-blue-400 shadow-md'
           : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'

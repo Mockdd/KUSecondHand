@@ -21,6 +21,7 @@
     "i18next": "^24.2.3",
     "next": "latest",
     "next-i18next": "^15.3.1",
+    "openai": "^6.37.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^15.5.1",
@@ -34,11 +35,12 @@
     "@types/react-dom": "^19.1.2",
     "@typescript-eslint/eslint-plugin": "^8.30.1",
     "@typescript-eslint/parser": "^8.30.1",
+    "dotenv": "^17.4.2",
     "eslint": "^9.25.1",
     "eslint-config-next": "latest",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.4",
-    "typescript": "^5.8.3",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
   }
 }

@@ -14,6 +14,22 @@
 --    seed.ee3@korea.ac.kr  — 전기전자공학부 3학년
 -- ============================================================
 
+-- ============================================================
+--  0-pre. 의존 카테고리 추가 (test-seed.sql 미실행 시 대비)
+-- ============================================================
+
+INSERT INTO categories (parent_id, name)
+SELECT c.category_id, '침구류'
+FROM categories c
+WHERE c.name = '생활용품'
+  AND NOT EXISTS (SELECT 1 FROM categories WHERE name = '침구류');
+
+INSERT INTO categories (parent_id, name)
+SELECT c.category_id, '문구/오피스'
+FROM categories c
+WHERE c.name = '기타'
+  AND NOT EXISTS (SELECT 1 FROM categories WHERE name = '문구/오피스');
+
 BEGIN;
 
 -- ============================================================
