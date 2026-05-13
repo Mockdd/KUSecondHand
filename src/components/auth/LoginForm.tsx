@@ -15,6 +15,8 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const bannerRegistered = searchParams.get('registered') === '1'
+  const registeredEmail = searchParams.get('email')
   const bannerWithdrawn = searchParams.get('withdrawn') === '1'
   const bannerReset = searchParams.get('reset') === 'ok'
   const nextPath = sanitizeNextPath(searchParams.get('next'), '/products')
@@ -81,6 +83,14 @@ export function LoginForm() {
 
   return (
     <div className="space-y-4">
+      {bannerRegistered ? (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          가입이 완료되었습니다. {registeredEmail ? (
+            <span className="font-medium">{registeredEmail}</span>
+          ) : null}
+          {' '}새 비밀번호로 로그인해 주세요.
+        </p>
+      ) : null}
       {bannerReset ? (
         <p className="rounded-lg border border-[#8B0029]/15 bg-[#8B0029]/[0.06] px-3 py-2 text-sm text-gray-800">
           비밀번호가 변경되었습니다. 새 비밀번호로 로그인하세요.

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/admin'
 import {
   validateNickname,
   validatePassword,
@@ -55,7 +54,10 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const db = createServiceRoleClient() ?? supabase
+  // 회원가입 완료는 "본인 프로필 삽입" RLS 정책으로 충분합니다.
+  // service role 키가 잘못 설정되면 Invalid API key로 가입이 막히므로,
+  // 이 경로에서는 세션 기반 클라이언트만 사용합니다.
+  const db = supabase
   const password_hash = bcrypt.hashSync(password, 12)
 
   const { data: existing } = await db.from('users').select('uid').eq('uid', user.id).maybeSingle()

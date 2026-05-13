@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams, useRouter } from 'next/navigation'
 import { useState, Suspense } from 'react'
 
 const NAV_ITEMS = [
@@ -43,6 +43,9 @@ function SearchInput() {
 
 export function NavBar() {
   const pathname = usePathname()
+  // NOTE: 로그인 여부 판별은 서버(proxy)에서 처리해 즉시 전환되게 합니다.
+  // 비로그인 상태로 /my/profile 접근 시 /login?next=/my/profile 로 리다이렉트됩니다.
+  useRouter() // keep hook order stable if SearchInput changes in future
 
   return (
     <div className="flex items-center gap-4">

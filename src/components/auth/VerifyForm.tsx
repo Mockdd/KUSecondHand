@@ -97,6 +97,10 @@ export function VerifyForm({ email }: Props) {
         setError(mapEmailOtpVerifyError(verifyErr.message))
         return
       }
+      // OTP 소모 후 세션이 생겼으므로 이후 재시도에서는 OTP 입력을 건너뜁니다.
+      setSessionReady(true)
+      // 쿠키가 서버에 반영될 때까지 한 틱 양보합니다.
+      await new Promise((resolve) => setTimeout(resolve, 100))
     }
 
     const res = await fetch('/api/auth/complete-profile', {
@@ -120,7 +124,9 @@ export function VerifyForm({ email }: Props) {
 
     await fetch('/api/auth/touch-activity', { method: 'POST', credentials: 'include' })
 
-    router.push('/products')
+    // 가입 완료 후에는 자동 로그인 상태를 유지하지 않고, 로그인 페이지로 돌려보냅니다.
+    await supabase.auth.signOut()
+    router.replace(`/login?registered=1&email=${encodeURIComponent(email)}`)
     router.refresh()
   }
 

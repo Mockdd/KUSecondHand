@@ -8,11 +8,6 @@ export default function ProfilePage() {
     <div className="max-w-xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-[#8B0029] mb-2">마이페이지</h1>
-        <p className="text-sm">
-          <Link href="/my/account" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
-            계정 관리 (탈퇴)
-          </Link>
-        </p>
       </div>
 
       <ProfileForm />
@@ -38,9 +33,25 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <ExchangeProfileSection />
-
       <SignOutButton />
+
+      <details className="rounded-xl border border-gray-200 bg-white p-4">
+        <summary className="cursor-pointer select-none text-sm font-medium text-gray-800">
+          교환학생이신가요?
+        </summary>
+        <div className="mt-4">
+          <ExchangeProfileSection />
+        </div>
+      </details>
+
+      <div className="pt-2 border-t border-gray-200">
+        <Link
+          href="/my/account"
+          className="text-sm font-medium text-red-600 hover:text-red-700"
+        >
+          회원 탈퇴
+        </Link>
+      </div>
     </div>
   )
 }
