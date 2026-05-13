@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import { isTrustedSeller } from '@/lib/trust/constants'
 import { productListSelect } from '@/lib/products/sellerEmbed'
 
+export const dynamic = 'force-dynamic'
+
 type Seller = {
   uid: string
   nickname: string

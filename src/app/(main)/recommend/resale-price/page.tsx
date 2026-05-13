@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ResalePriceClient } from './_components/ResalePriceClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ResalePricePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
