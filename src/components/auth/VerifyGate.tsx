@@ -13,7 +13,7 @@ export function VerifyGate() {
     return (
       <div className="text-center text-sm text-gray-600">
         <p className="mb-3">이메일 정보가 없습니다. 회원가입에서 이메일을 먼저 입력해 주세요.</p>
-        <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+        <Link href="/register" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
           회원가입으로 돌아가기
         </Link>
       </div>

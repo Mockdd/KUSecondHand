@@ -72,9 +72,9 @@ export function ActivityRegionAuto({ disabled, onResolved }: Props) {
   }
 
   return (
-    <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 space-y-3">
+    <div className="rounded-xl border border-[#8B0029]/15 bg-[#8B0029]/[0.05] p-4 space-y-3">
       <div>
-        <h3 className="text-sm font-semibold text-gray-900">활동 지역 자동 설정</h3>
+        <h3 className="text-sm font-semibold text-[#8B0029]">활동 지역 자동 설정</h3>
         <p className="mt-1 text-xs text-gray-600 leading-relaxed">
           기기 GPS·Wi‑Fi 기반 대략 위치를 사용합니다. 정밀 좌표는 저장하지 않고, 지역 목록과만
           매칭합니다. 서버에서 주소로 변환할 때 외부 지오코딩(OSM Nominatim)을 사용합니다.
@@ -84,7 +84,7 @@ export function ActivityRegionAuto({ disabled, onResolved }: Props) {
         type="button"
         onClick={() => void run()}
         disabled={disabled || loading}
-        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+        className="rounded-lg bg-[#8B0029] px-4 py-2 text-sm font-medium text-white hover:bg-[#6B0020] disabled:opacity-50"
       >
         {loading ? '위치 확인 중…' : '현재 위치로 활동 지역 맞추기'}
       </button>

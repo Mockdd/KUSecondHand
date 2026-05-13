@@ -82,7 +82,7 @@ export function LoginForm() {
   return (
     <div className="space-y-4">
       {bannerReset ? (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        <p className="rounded-lg border border-[#8B0029]/15 bg-[#8B0029]/[0.06] px-3 py-2 text-sm text-gray-800">
           비밀번호가 변경되었습니다. 새 비밀번호로 로그인하세요.
         </p>
       ) : null}
@@ -104,7 +104,7 @@ export function LoginForm() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
             disabled={loading}
           />
         </div>
@@ -119,7 +119,7 @@ export function LoginForm() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
             disabled={loading}
           />
         </div>
@@ -133,23 +133,23 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+          className="w-full rounded-lg bg-[#8B0029] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6B0020] disabled:opacity-50"
         >
           {loading ? '로그인 중…' : '로그인'}
         </button>
 
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-gray-500">
-          <Link href="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <Link href="/forgot-password" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
             비밀번호 찾기
           </Link>
-          <Link href="/find-id" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <Link href="/find-id" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
             아이디 찾기
           </Link>
         </div>
 
         <p className="text-center text-sm text-gray-500">
           계정이 없나요?{' '}
-          <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <Link href="/register" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
             회원가입
           </Link>
         </p>

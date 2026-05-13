@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -17,7 +17,7 @@ const CONDITION_OPTIONS = [
   { value: 'poor',     label: '하자 있음' },
 ]
 
-export default function NewProductPage() {
+function NewProductPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -293,5 +293,20 @@ export default function NewProductPage() {
           </button>
         </form>
     </div>
+  )
+}
+
+export default function NewProductPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-2xl space-y-6">
+          <h1 className="text-2xl font-bold text-gray-900">상품 등록</h1>
+          <p className="text-sm text-gray-500">불러오는 중…</p>
+        </div>
+      }
+    >
+      <NewProductPageInner />
+    </Suspense>
   )
 }

@@ -146,7 +146,7 @@ export function VerifyForm({ email }: Props) {
             value={otp}
             onChange={(e) => setOtp(normalizeOtp(e.target.value))}
             placeholder={OTP_INPUT_PLACEHOLDER}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 tracking-widest text-center text-lg font-mono shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 tracking-widest text-center text-lg font-mono shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
             disabled={loading}
           />
         </div>
@@ -162,7 +162,7 @@ export function VerifyForm({ email }: Props) {
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           disabled={loading}
         />
       </div>
@@ -177,7 +177,7 @@ export function VerifyForm({ email }: Props) {
           autoComplete="new-password"
           value={password2}
           onChange={(e) => setPassword2(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           disabled={loading}
         />
       </div>
@@ -192,7 +192,7 @@ export function VerifyForm({ email }: Props) {
           autoComplete="nickname"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           disabled={loading}
         />
       </div>
@@ -207,7 +207,7 @@ export function VerifyForm({ email }: Props) {
           inputMode="numeric"
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           disabled={loading}
         />
       </div>
@@ -221,13 +221,13 @@ export function VerifyForm({ email }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+        className="w-full rounded-lg bg-[#8B0029] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6B0020] disabled:opacity-50"
       >
         {loading ? '처리 중…' : '가입 완료'}
       </button>
 
       <p className="text-center text-sm text-gray-500">
-        <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+        <Link href="/register" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
           이메일 다시 입력
         </Link>
       </p>

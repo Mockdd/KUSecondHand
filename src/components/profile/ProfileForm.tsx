@@ -252,7 +252,7 @@ export function ProfileForm() {
         </div>
         <div className="flex flex-col gap-2 text-sm">
           <label className="inline-flex">
-            <span className="rounded-lg bg-white px-3 py-2 font-medium text-indigo-600 ring-1 ring-gray-300 hover:bg-gray-50 cursor-pointer">
+            <span className="rounded-lg bg-white px-3 py-2 font-medium text-[#8B0029] ring-1 ring-gray-300 hover:bg-[#8B0029]/5 cursor-pointer">
               {uploading ? '업로드 중…' : '사진 변경'}
             </span>
             <input
@@ -277,8 +277,8 @@ export function ProfileForm() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
-        <p className="text-xs font-medium text-emerald-900 uppercase tracking-wide">활동 지역</p>
+      <section className="rounded-xl border border-[#8B0029]/15 bg-[#8B0029]/[0.04] p-4 shadow-sm">
+        <p className="text-xs font-medium text-[#8B0029] uppercase tracking-wide">활동 지역</p>
         <p className="mt-1 text-lg font-semibold text-gray-900">
           {selectedRegionLabel ?? (
             <span className="text-gray-400 font-normal">아직 설정되지 않음 · 아래에서 위치 또는 목록으로 설정</span>
@@ -299,7 +299,7 @@ export function ProfileForm() {
       />
 
       <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 text-sm">
-        <h2 className="font-semibold text-gray-900">계정 정보</h2>
+        <h2 className="font-semibold text-[#8B0029]">계정 정보</h2>
         <dl className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-2 text-gray-700">
           <dt className="text-gray-500">이메일</dt>
           <dd className="break-all">{profile.email ?? '—'}</dd>
@@ -333,7 +333,7 @@ export function ProfileForm() {
       </section>
 
       <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <h2 className="font-semibold text-gray-900">프로필 수정</h2>
+        <h2 className="font-semibold text-[#8B0029]">프로필 수정</h2>
 
         <div>
           <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-1">
@@ -344,7 +344,7 @@ export function ProfileForm() {
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             maxLength={50}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
             disabled={saving}
           />
         </div>
@@ -360,7 +360,7 @@ export function ProfileForm() {
             rows={3}
             maxLength={500}
             placeholder="자기소개를 입력하세요"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
             disabled={saving}
           />
           <p className="mt-1 text-xs text-gray-400">{bio.length} / 500</p>
@@ -377,7 +377,7 @@ export function ProfileForm() {
             id="region"
             value={preferredRegionId}
             onChange={(e) => setPreferredRegionId(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
             disabled={saving}
           >
             <option value="">선택 안 함</option>
@@ -398,7 +398,7 @@ export function ProfileForm() {
               id="major"
               value={majorId}
               onChange={(e) => setMajorId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
               disabled={saving}
             >
               <option value="">선택 안 함</option>
@@ -414,7 +414,7 @@ export function ProfileForm() {
         <button
           type="submit"
           disabled={saving || uploading}
-          className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+          className="rounded-lg bg-[#8B0029] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6B0020] disabled:opacity-50"
         >
           {saving ? '저장 중…' : '저장'}
         </button>

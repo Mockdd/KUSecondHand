@@ -138,7 +138,7 @@ export function ReactivateForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
             disabled={loading}
           />
         </div>
@@ -146,12 +146,12 @@ export function ReactivateForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+          className="w-full rounded-lg bg-[#8B0029] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6B0020] disabled:opacity-50"
         >
           {loading ? '발송 중…' : '인증번호 받기'}
         </button>
         <p className="text-center text-sm text-gray-500">
-          <Link href="/login" className="text-indigo-600 hover:text-indigo-500">
+          <Link href="/login" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
             로그인
           </Link>
         </p>
@@ -175,7 +175,7 @@ export function ReactivateForm() {
           value={otp}
           onChange={(e) => setOtp(normalizeOtp(e.target.value))}
           placeholder={OTP_INPUT_PLACEHOLDER}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-center font-mono text-lg tracking-widest"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 text-center font-mono text-lg tracking-widest shadow-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           disabled={loading}
         />
       </div>
@@ -183,7 +183,7 @@ export function ReactivateForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+        className="w-full rounded-lg bg-[#8B0029] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6B0020] disabled:opacity-50"
       >
         {loading ? '처리 중…' : '휴면 해제하기'}
       </button>

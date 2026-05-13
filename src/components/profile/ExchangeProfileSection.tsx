@@ -94,9 +94,9 @@ export function ExchangeProfileSection() {
   if (isLoading) return null
 
   return (
-    <div className="space-y-4 rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
+    <div className="space-y-4 rounded-xl border border-[#8B0029]/20 bg-[#8B0029]/[0.05] p-4 shadow-sm">
       <div>
-        <h2 className="font-semibold text-gray-900">교환학생 정보</h2>
+        <h2 className="font-semibold text-[#8B0029]">교환학생 정보</h2>
         <p className="text-xs text-gray-500 mt-0.5">
           {profile ? `국가: ${profile.country?.name_ko ?? '—'}` : '아직 교환학생 프로필이 없어요. 아래에서 등록할 수 있어요.'}
         </p>
@@ -108,7 +108,7 @@ export function ExchangeProfileSection() {
           <select
             value={countryId}
             onChange={(e) => setCountryId(e.target.value === '' ? '' : Number(e.target.value))}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white text-sm"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white text-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           >
             <option value="">선택하세요</option>
             {countries.map((c) => (
@@ -124,7 +124,7 @@ export function ExchangeProfileSection() {
           <select
             value={housingType}
             onChange={(e) => setHousingType(e.target.value as HousingTypeEnum | '')}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white text-sm"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white text-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           >
             <option value="">선택하세요</option>
             <option value="dorm">기숙사 (Dorm)</option>
@@ -137,7 +137,7 @@ export function ExchangeProfileSection() {
           <select
             value={semester}
             onChange={(e) => setSemester(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white text-sm"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white text-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           >
             <option value="">선택하세요</option>
             <option value="2025-2">2025-2</option>
@@ -152,7 +152,7 @@ export function ExchangeProfileSection() {
           <select
             value={languagePref}
             onChange={(e) => setLanguagePref(e.target.value as LanguagePrefEnum)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white text-sm"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white text-sm focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
           >
             <option value="ko">한국어</option>
             <option value="en">English</option>
@@ -168,7 +168,7 @@ export function ExchangeProfileSection() {
         <button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
-          className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+          className="rounded-lg bg-[#8B0029] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6B0020] disabled:opacity-50"
         >
           {saveMutation.isPending ? '저장 중...' : profile ? '교환학생 정보 저장' : '교환학생으로 등록'}
         </button>

@@ -7,9 +7,9 @@ export default function ProfilePage() {
   return (
     <div className="max-w-xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">마이페이지</h1>
+        <h1 className="text-2xl font-bold text-[#8B0029] mb-2">마이페이지</h1>
         <p className="text-sm">
-          <Link href="/my/account" className="text-indigo-600 hover:text-indigo-500">
+          <Link href="/my/account" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
             계정 관리 (탈퇴)
           </Link>
         </p>
@@ -18,8 +18,8 @@ export default function ProfilePage() {
       <ProfileForm />
 
       {/* 맞춤 추천 */}
-      <div className="rounded-xl border border-gray-100 bg-gray-50 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-gray-900">맞춤 추천</h2>
+      <div className="rounded-xl border border-[#8B0029]/15 bg-[#8B0029]/[0.04] p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-[#8B0029]">맞춤 추천</h2>
         <div className="grid grid-cols-2 gap-2">
           <Link
             href="/recommendations"
