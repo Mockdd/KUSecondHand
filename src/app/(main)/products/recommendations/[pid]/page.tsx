@@ -17,6 +17,8 @@ import {
   DEVICE_FIELDS,
   formatPrice,
 } from '@lib/format'
+import { WishlistButton } from '@/components/wishlist/WishlistButton'
+import { ChatButton } from '@/components/chat/ChatButton'
 
 /**
  * useParams 는 string | string[] | undefined 를 반환할 수 있어 정규화한다.
@@ -103,16 +105,6 @@ export default function ProductDetailPage() {
     if (!authChecked || !pid) return
     void logProductView(pid)
   }, [authChecked, pid])
-
-  function handleWishlist() {
-    // TODO: 옆 팀 함수와 연결 예정
-    alert('내일 옆 팀과 합칠 때 연결할 예정입니다')
-  }
-
-  function handleChat() {
-    // TODO: 옆 팀 함수와 연결 예정
-    alert('내일 옆 팀과 합칠 때 연결할 예정입니다')
-  }
 
   if (!authChecked) {
     return (
@@ -222,21 +214,9 @@ export default function ProductDetailPage() {
         </p>
       </section>
 
-      <div className="flex gap-2 border-t pt-4">
-        <button
-          type="button"
-          onClick={handleWishlist}
-          className="flex-1 rounded border border-gray-300 py-2 text-sm hover:bg-gray-50"
-        >
-          ♡ 찜하기
-        </button>
-        <button
-          type="button"
-          onClick={handleChat}
-          className="flex-1 rounded bg-black text-white py-2 text-sm hover:bg-gray-800"
-        >
-          채팅하기
-        </button>
+      <div className="space-y-2 border-t pt-4">
+        <WishlistButton pid={pid} />
+        <ChatButton pid={pid} sellerUid={product.seller.uid} />
       </div>
     </div>
   )
