@@ -3,9 +3,6 @@
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ActivityRegionAuto } from '@/components/profile/ActivityRegionAuto'
-import { TrustBadge } from '@/components/trust/TrustBadge'
-import { isTrustedSeller } from '@/lib/trust/constants'
 
 type Region = { region_id: number; name: string }
 type Major = { major_id: number; name: string }
@@ -135,11 +132,11 @@ export function ProfileForm() {
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      setError('이미지 파일만 업로드할 수 있습니다.')
+      window.alert('이미지 파일만 업로드할 수 있습니다.')
       return
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError('파일 크기는 5MB 이하여야 합니다.')
+      window.alert('파일 크기는 5MB 이하여야 합니다.')
       return
     }
 
@@ -253,7 +250,11 @@ export function ProfileForm() {
         <div className="flex flex-col gap-2 text-sm">
           <label className="inline-flex">
             <span className="rounded-lg bg-white px-3 py-2 font-medium text-[#8B0029] ring-1 ring-gray-300 hover:bg-[#8B0029]/5 cursor-pointer">
-              {uploading ? '업로드 중…' : '사진 변경'}
+              {uploading
+                ? '업로드 중…'
+                : profile.profile_image_url
+                  ? '사진 변경'
+                  : '사진 업로드'}
             </span>
             <input
               type="file"
@@ -273,7 +274,6 @@ export function ProfileForm() {
               사진 삭제
             </button>
           ) : null}
-          <p className="text-xs text-gray-500">JPEG·PNG·WebP·GIF, 최대 5MB. 버킷 이름: avatars</p>
         </div>
       </section>
 
@@ -284,19 +284,26 @@ export function ProfileForm() {
             <span className="text-gray-400 font-normal">아직 설정되지 않음 · 아래에서 위치 또는 목록으로 설정</span>
           )}
         </p>
-        <p className="mt-2 text-xs text-gray-600">
-          거래 노출·지역 그룹핑에는 이 활동 지역(`preferred_region_id`)이 사용됩니다.
-        </p>
+        <div className="mt-4">
+          <label htmlFor="regionQuick" className="block text-sm font-medium text-gray-700 mb-1">
+            활동 지역 설정
+          </label>
+          <select
+            id="regionQuick"
+            value={preferredRegionId}
+            onChange={(e) => setPreferredRegionId(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
+            disabled={saving || uploading}
+          >
+            <option value="">선택 안 함</option>
+            {regions.map((r) => (
+              <option key={r.region_id} value={r.region_id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </section>
-
-      <ActivityRegionAuto
-        disabled={saving || uploading}
-        onResolved={(regionId) => {
-          setPreferredRegionId(String(regionId))
-          setSuccess(null)
-          setError(null)
-        }}
-      />
 
       <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 text-sm">
         <h2 className="font-semibold text-[#8B0029]">계정 정보</h2>
@@ -313,14 +320,9 @@ export function ProfileForm() {
             <span className="text-xs text-gray-500">(받은 리뷰 별점 기준)</span>
           </dd>
           <dt className="text-gray-500">신뢰 뱃지</dt>
-          <dd>
-            <TrustBadge trusted={isTrustedSeller(profile.successful_trade_count)} />
-            {!isTrustedSeller(profile.successful_trade_count) ? (
-              <span className="text-gray-400">성공 거래 2회 이상 시 표시</span>
-            ) : null}
-          </dd>
+          <dd>—</dd>
           <dt className="text-gray-500">성공 거래</dt>
-          <dd>{profile.successful_trade_count ?? 0} · 구매·판매 모두 포함, 양쪽 만족 완료만 집계</dd>
+          <dd>—</dd>
           <dt className="text-gray-500">거래 횟수</dt>
           <dd>{profile.trade_count ?? '—'}</dd>
           {profile.major_name ? (
@@ -368,11 +370,8 @@ export function ProfileForm() {
 
         <div>
           <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
-            활동 지역 (목록에서 직접 선택)
+            활동 지역
           </label>
-          <p className="text-xs text-gray-500 mb-2">
-            위치 자동 설정이 실패하거나 부정확할 때만 수정하면 됩니다.
-          </p>
           <select
             id="region"
             value={preferredRegionId}
