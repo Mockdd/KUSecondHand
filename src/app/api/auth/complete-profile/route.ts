@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/admin'
 import {
   validateNickname,
   validatePassword,
@@ -94,7 +95,13 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { error: authPwError } = await supabase.auth.updateUser({ password })
+  // admin 클라이언트로 비밀번호 설정 (세션 의존성 없이 uid 기준으로 확실하게 처리)
+  const admin = createServiceRoleClient()
+  if (!admin) {
+    return NextResponse.json({ error: '서버 설정 오류입니다.' }, { status: 500 })
+  }
+
+  const { error: authPwError } = await admin.auth.admin.updateUserById(user.id, { password })
   if (authPwError) {
     return NextResponse.json(
       { error: `프로필은 저장됐으나 비밀번호 설정에 실패했습니다: ${authPwError.message}` },
