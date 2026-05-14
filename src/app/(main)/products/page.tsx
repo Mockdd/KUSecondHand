@@ -25,15 +25,48 @@ type ProductRow = {
   product_images?: { image_url: string }[] | null
 }
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category_id?: string }>
+}) {
+  const { category_id } = await searchParams
+  const categoryId = category_id ? Number(category_id) : null
+
   const supabase = await createClient()
-  const { data: rows, error } = await supabase
+
+  let query = supabase
     .from('products')
     .select(productListSelect())
     .is('deleted_at', null)
     .eq('status', 'selling')
     .order('created_at', { ascending: false })
-    .range(0, 19)
+    .range(0, 39)
+
+  if (categoryId) {
+    const { data: categoryTree } = await supabase
+      .from('categories')
+      .select('category_id, parent_id')
+
+    const allIds = new Set<number>([categoryId])
+    categoryTree?.forEach((c) => {
+      if (c.parent_id === categoryId) allIds.add(c.category_id)
+    })
+
+    query = query.in('category_id', [...allIds])
+  }
+
+  const { data: rows, error } = await query
+
+  let categoryName: string | null = null
+  if (categoryId) {
+    const { data: cat } = await supabase
+      .from('categories')
+      .select('name')
+      .eq('category_id', categoryId)
+      .maybeSingle()
+    categoryName = cat?.name ?? null
+  }
 
   if (error) {
     return (
@@ -48,52 +81,60 @@ export default async function ProductsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">상품 목록</h1>
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((p) => {
-          const img = p.product_images?.[0]?.image_url
-          const seller = p.seller
-          return (
-            <li
-              key={p.pid}
-              className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
-            >
-              <Link href={`/products/${p.pid}`} className="block">
-                <div className="relative aspect-[4/3] bg-gray-100">
-                  {img ? (
-                    <Image
-                      src={img}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="(max-width:768px) 100vw, 33vw"
-                    />
-                  ) : null}
-                </div>
-                <div className="space-y-1 p-3">
-                  <p className="line-clamp-2 font-medium text-gray-900">{p.title}</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {p.price.toLocaleString()}원
-                  </p>
-                  {seller ? (
-                    <p className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-                      <span>{seller.nickname}</span>
-                      <TrustBadge trusted={isTrustedSeller(seller.successful_trade_count)} />
-                      <span className="text-gray-400">
-                        온도{' '}
-                        {seller.manner_temperature != null ? String(seller.manner_temperature) : '—'}
-                      </span>
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">
+        {categoryName ? `${categoryName} 상품` : '상품 목록'}
+      </h1>
+      {products.length === 0 ? (
+        <p className="text-sm text-gray-500 py-12 text-center">
+          {categoryName ? `${categoryName} 카테고리에 등록된 상품이 없어요.` : '등록된 상품이 없어요.'}
+        </p>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((p) => {
+            const img = p.product_images?.[0]?.image_url
+            const seller = p.seller
+            return (
+              <li
+                key={p.pid}
+                className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+              >
+                <Link href={`/products/${p.pid}`} className="block">
+                  <div className="relative aspect-[4/3] bg-gray-100">
+                    {img ? (
+                      <Image
+                        src={img}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="(max-width:768px) 100vw, 33vw"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="space-y-1 p-3">
+                    <p className="line-clamp-2 font-medium text-gray-900">{p.title}</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {p.price.toLocaleString()}원
                     </p>
-                  ) : null}
+                    {seller ? (
+                      <p className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                        <span>{seller.nickname}</span>
+                        <TrustBadge trusted={isTrustedSeller(seller.successful_trade_count)} />
+                        <span className="text-gray-400">
+                          온도{' '}
+                          {seller.manner_temperature != null ? String(seller.manner_temperature) : '—'}
+                        </span>
+                      </p>
+                    ) : null}
+                  </div>
+                </Link>
+                <div className="absolute right-2 top-2">
+                  <WishlistButton pid={p.pid} compact />
                 </div>
-              </Link>
-              <div className="absolute right-2 top-2">
-                <WishlistButton pid={p.pid} compact />
-              </div>
-            </li>
-          )
-        })}
-      </ul>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }
