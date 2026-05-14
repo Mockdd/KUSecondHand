@@ -58,3 +58,14 @@ export function validateBio(bio: string | null | undefined): string | null {
   }
   return null
 }
+
+const CLUB_NAME_MAX = 200
+
+export function validateClubName(name: string | null | undefined): string | null {
+  if (name == null || name === '') return null
+  const t = String(name).trim()
+  if (t.length > CLUB_NAME_MAX) {
+    return `동아리는 ${CLUB_NAME_MAX}자 이하로 입력하세요.`
+  }
+  return null
+}

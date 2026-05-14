@@ -1,8 +1,9 @@
 'use client'
 
-import Image from 'next/image'
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { SignOutButton } from '@/components/auth/SignOutButton'
+import { ProfileAnimalAvatar } from '@/components/profile/ProfileAnimalAvatar'
 
 type Major = { major_id: number; name: string }
 
@@ -14,19 +15,32 @@ type ProfilePayload = {
   profile_image_url: string | null
   preferred_region_id: number | null
   major_id?: number | null
+  grade?: number | null
+  housing_type?: string | null
+  club_name?: string | null
   student_id?: string
   school_domain?: string
-  manner_temperature?: number
-  trade_count?: number
-  successful_trade_count?: number
   region_name?: string | null
   major_name?: string | null
 }
 
+function formatGrade(g: number | string | null | undefined): string {
+  if (g == null || g === '') return '—'
+  const n = typeof g === 'string' ? Number.parseInt(g, 10) : g
+  if (!Number.isFinite(n) || n < 1 || n > 4) return '—'
+  return `${n}학년`
+}
+
+function formatHousing(h: string | null | undefined): string {
+  if (h === 'dorm') return '기숙사'
+  if (h === 'flat') return '자취'
+  return '—'
+}
+
 export function ProfileForm() {
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -35,7 +49,19 @@ export function ProfileForm() {
 
   const [nickname, setNickname] = useState('')
   const [bio, setBio] = useState('')
-  const [majorId, setMajorId] = useState<string>('')
+  const [majorId, setMajorId] = useState('')
+  const [gradeStr, setGradeStr] = useState('')
+  const [housingStr, setHousingStr] = useState('')
+  const [club, setClub] = useState('')
+
+  const syncFormFromProfile = useCallback((p: ProfilePayload) => {
+    setNickname(p.nickname ?? '')
+    setBio(p.bio ?? '')
+    setMajorId(p.major_id != null ? String(p.major_id) : '')
+    setGradeStr(p.grade != null && p.grade >= 1 && p.grade <= 4 ? String(p.grade) : '')
+    setHousingStr(p.housing_type === 'dorm' || p.housing_type === 'flat' ? p.housing_type : '')
+    setClub(p.club_name ?? '')
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -54,9 +80,7 @@ export function ProfileForm() {
       const profileJson = (await pr.json()) as { profile: ProfilePayload }
       const p = profileJson.profile
       setProfile(p)
-      setNickname(p.nickname ?? '')
-      setBio(p.bio ?? '')
-      setMajorId(p.major_id != null ? String(p.major_id) : '')
+      syncFormFromProfile(p)
 
       if (mj.ok) {
         const mjJson = (await mj.json()) as { majors: Major[] }
@@ -67,7 +91,7 @@ export function ProfileForm() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [syncFormFromProfile])
 
   useEffect(() => {
     void load()
@@ -82,6 +106,9 @@ export function ProfileForm() {
     const body: Record<string, unknown> = {
       nickname: nickname.trim(),
       bio: bio.trim() || null,
+      grade: gradeStr === '' ? null : Number.parseInt(gradeStr, 10),
+      housing_type: housingStr === '' ? null : housingStr,
+      club_name: club.trim() === '' ? null : club.trim(),
     }
     if (majors.length > 0) {
       body.major_id = majorId === '' ? null : Number.parseInt(majorId, 10)
@@ -103,92 +130,22 @@ export function ProfileForm() {
     }
 
     setSuccess('저장했습니다.')
+    setEditing(false)
     await load()
   }
 
-  async function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      window.alert('이미지 파일만 업로드할 수 있습니다.')
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      window.alert('파일 크기는 5MB 이하여야 합니다.')
-      return
-    }
-
-    setUploading(true)
+  function openEdit() {
+    if (!profile) return
+    syncFormFromProfile(profile)
     setError(null)
-    setSuccess(null)
-
-    try {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error('로그인이 필요합니다.')
-
-      const ext =
-        file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '')?.toLowerCase() || 'jpg'
-      const path = `${user.id}/avatar_${Date.now()}.${ext}`
-
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, {
-        cacheControl: '3600',
-        upsert: true,
-      })
-
-      if (upErr) {
-        throw new Error(
-          upErr.message.includes('Bucket not found')
-            ? '스토리지 버킷 avatars 가 없습니다. Supabase에서 버킷을 만든 뒤 다시 시도하세요.'
-            : upErr.message,
-        )
-      }
-
-      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path)
-      const publicUrl = pub.publicUrl
-
-      const res = await fetch('/api/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ profile_image_url: publicUrl }),
-      })
-
-      const pj = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error((pj as { error?: string }).error ?? '프로필 URL 저장에 실패했습니다.')
-      }
-
-      setSuccess('프로필 사진을 반영했습니다.')
-      await load()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '업로드에 실패했습니다.')
-    } finally {
-      setUploading(false)
-    }
+    setEditing(true)
   }
 
-  async function clearAvatar() {
-    setSaving(true)
+  function cancelEdit() {
+    if (!profile) return
+    syncFormFromProfile(profile)
+    setEditing(false)
     setError(null)
-    const res = await fetch('/api/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ profile_image_url: null }),
-    })
-    setSaving(false)
-    if (!res.ok) {
-      const j = await res.json().catch(() => ({}))
-      setError((j as { error?: string }).error ?? '삭제에 실패했습니다.')
-      return
-    }
-    setSuccess('프로필 사진을 삭제했습니다.')
-    await load()
   }
 
   if (loading) {
@@ -198,6 +155,29 @@ export function ProfileForm() {
   if (!profile) {
     return <p className="text-sm text-red-600">{error ?? '프로필을 불러올 수 없습니다.'}</p>
   }
+
+  const accountBlock = (
+    <section className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-[#8B0029] mb-3">계정 정보</h2>
+      <dl className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-2 text-sm text-gray-700 mb-4">
+        <dt className="text-gray-500">이메일</dt>
+        <dd className="break-all text-gray-900">{profile.email ?? '—'}</dd>
+        <dt className="text-gray-500">학번</dt>
+        <dd className="text-gray-900">{profile.student_id ?? '—'}</dd>
+        <dt className="text-gray-500">학교 메일 도메인</dt>
+        <dd className="text-gray-900">{profile.school_domain ?? '—'}</dd>
+      </dl>
+      <div className="flex flex-col gap-3 border-t border-gray-200 pt-4">
+        <SignOutButton />
+        <Link
+          href="/my/account"
+          className="text-sm font-medium text-red-600 hover:text-red-700 w-fit"
+        >
+          회원 탈퇴
+        </Link>
+      </div>
+    </section>
+  )
 
   return (
     <div className="max-w-xl space-y-8">
@@ -210,137 +190,187 @@ export function ProfileForm() {
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{success}</p>
       ) : null}
 
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full bg-gray-100 ring-1 ring-gray-200">
-          {profile.profile_image_url ? (
-            <Image
-              src={profile.profile_image_url}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="112px"
-              unoptimized
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-3xl text-gray-400">
-              ?
+      {!editing ? (
+        <>
+          <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <ProfileAnimalAvatar uid={profile.uid} />
+              <div className="flex flex-1 flex-col gap-3">
+                <h2 className="text-sm font-semibold text-[#8B0029]">프로필</h2>
+                <dl className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-2 text-sm text-gray-700">
+                  <dt className="text-gray-500">닉네임</dt>
+                  <dd className="font-medium text-gray-900">{profile.nickname}</dd>
+                  <dt className="text-gray-500">한 줄 소개</dt>
+                  <dd className="whitespace-pre-wrap text-gray-800">
+                    {profile.bio?.trim() ? profile.bio : '—'}
+                  </dd>
+                  <dt className="text-gray-500">학과</dt>
+                  <dd className="text-gray-900">{profile.major_name?.trim() ? profile.major_name : '—'}</dd>
+                  <dt className="text-gray-500">학년</dt>
+                  <dd className="text-gray-900">{formatGrade(profile.grade)}</dd>
+                  <dt className="text-gray-500">거주 형태</dt>
+                  <dd className="text-gray-900">{formatHousing(profile.housing_type ?? undefined)}</dd>
+                  <dt className="text-gray-500">동아리</dt>
+                  <dd className="whitespace-pre-wrap text-gray-900">
+                    {profile.club_name?.trim() ? profile.club_name : '—'}
+                  </dd>
+                </dl>
+                <button
+                  type="button"
+                  onClick={openEdit}
+                  className="self-start rounded-lg bg-[#8B0029] px-4 py-2 text-sm font-semibold text-white hover:bg-[#6B0020]"
+                >
+                  프로필 수정
+                </button>
+              </div>
             </div>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 text-sm">
-          <label className="inline-flex">
-            <span className="rounded-lg bg-white px-3 py-2 font-medium text-[#8B0029] ring-1 ring-gray-300 hover:bg-[#8B0029]/5 cursor-pointer">
-              {uploading
-                ? '업로드 중…'
-                : profile.profile_image_url
-                  ? '사진 변경'
-                  : '사진 업로드'}
-            </span>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              disabled={uploading || saving}
-              onChange={handlePickFile}
-            />
-          </label>
-          {profile.profile_image_url ? (
-            <button
-              type="button"
-              onClick={() => void clearAvatar()}
-              disabled={saving || uploading}
-              className="text-left text-sm text-red-600 hover:text-red-500 disabled:opacity-50"
-            >
-              사진 삭제
-            </button>
-          ) : null}
-        </div>
-      </section>
+          </section>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 text-sm">
-        <h2 className="font-semibold text-[#8B0029]">계정 정보</h2>
-        <dl className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-2 text-gray-700">
-          <dt className="text-gray-500">이메일</dt>
-          <dd className="break-all">{profile.email ?? '—'}</dd>
-          <dt className="text-gray-500">학번</dt>
-          <dd>{profile.student_id ?? '—'}</dd>
-          <dt className="text-gray-500">학교 메일 도메인</dt>
-          <dd>{profile.school_domain ?? '—'}</dd>
-          <dt className="text-gray-500">거래 횟수</dt>
-          <dd>{profile.trade_count ?? '—'}</dd>
-          {profile.major_name ? (
-            <>
-              <dt className="text-gray-500">전공</dt>
-              <dd>{profile.major_name}</dd>
-            </>
-          ) : null}
-        </dl>
-      </section>
+          {accountBlock}
+        </>
+      ) : (
+        <>
+          <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <ProfileAnimalAvatar uid={profile.uid} />
+              <p className="text-sm text-gray-500">
+                프로필 이미지는 계정마다 고정된 동물 캐릭터로 표시돼요.
+              </p>
+            </div>
+          </section>
 
-      <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <h2 className="font-semibold text-[#8B0029]">프로필 수정</h2>
+          <form
+            onSubmit={handleSave}
+            className="space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+          >
+            <h2 className="font-semibold text-[#8B0029]">프로필 수정</h2>
 
-        <div>
-          <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-1">
-            닉네임
-          </label>
-          <input
-            id="nickname"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            maxLength={50}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
-            disabled={saving}
-          />
-        </div>
+            <div>
+              <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-1">
+                닉네임
+              </label>
+              <input
+                id="nickname"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={50}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
+                disabled={saving}
+              />
+            </div>
 
-        <div>
-          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-            한 줄 소개
-          </label>
-          <textarea
-            id="bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            rows={3}
-            maxLength={500}
-            placeholder="자기소개를 입력하세요"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
-            disabled={saving}
-          />
-          <p className="mt-1 text-xs text-gray-400">{bio.length} / 500</p>
-        </div>
+            <div>
+              <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+                한 줄 소개
+              </label>
+              <textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder="자기소개를 입력하세요"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
+                disabled={saving}
+              />
+              <p className="mt-1 text-xs text-gray-400">{bio.length} / 500</p>
+            </div>
 
-        {majors.length > 0 ? (
-          <div>
-            <label htmlFor="major" className="block text-sm font-medium text-gray-700 mb-1">
-              전공
-            </label>
-            <select
-              id="major"
-              value={majorId}
-              onChange={(e) => setMajorId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
-              disabled={saving}
-            >
-              <option value="">선택 안 함</option>
-              {majors.map((m) => (
-                <option key={m.major_id} value={m.major_id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
+            {majors.length > 0 ? (
+              <div>
+                <label htmlFor="major" className="block text-sm font-medium text-gray-700 mb-1">
+                  학과
+                </label>
+                <select
+                  id="major"
+                  value={majorId}
+                  onChange={(e) => setMajorId(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
+                  disabled={saving}
+                >
+                  <option value="">선택 안 함</option>
+                  {majors.map((m) => (
+                    <option key={m.major_id} value={m.major_id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
-        <button
-          type="submit"
-          disabled={saving || uploading}
-          className="rounded-lg bg-[#8B0029] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6B0020] disabled:opacity-50"
-        >
-          {saving ? '저장 중…' : '저장'}
-        </button>
-      </form>
+            <div>
+              <label htmlFor="grade" className="block text-sm font-medium text-gray-700 mb-1">
+                학년
+              </label>
+              <select
+                id="grade"
+                value={gradeStr}
+                onChange={(e) => setGradeStr(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
+                disabled={saving}
+              >
+                <option value="">선택 안 함</option>
+                <option value="1">1학년</option>
+                <option value="2">2학년</option>
+                <option value="3">3학년</option>
+                <option value="4">4학년</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="housing" className="block text-sm font-medium text-gray-700 mb-1">
+                거주 형태
+              </label>
+              <select
+                id="housing"
+                value={housingStr}
+                onChange={(e) => setHousingStr(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
+                disabled={saving}
+              >
+                <option value="">선택 안 함</option>
+                <option value="dorm">기숙사</option>
+                <option value="flat">자취</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="club" className="block text-sm font-medium text-gray-700 mb-1">
+                동아리
+              </label>
+              <input
+                id="club"
+                value={club}
+                onChange={(e) => setClub(e.target.value)}
+                maxLength={200}
+                placeholder="동아리명을 입력하세요"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
+                disabled={saving}
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-[#8B0029] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#6B0020] disabled:opacity-50"
+              >
+                {saving ? '저장 중…' : '저장'}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                disabled={saving}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                취소
+              </button>
+            </div>
+          </form>
+
+          {accountBlock}
+        </>
+      )}
     </div>
   )
 }

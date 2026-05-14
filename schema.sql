@@ -251,6 +251,8 @@ CREATE TABLE users (
     preferred_region_id INTEGER         NULL,
     major_id            INTEGER         NULL,                       -- 소속 전공
     grade               SMALLINT        NULL,                       -- 학년 1~4
+    housing_type        TEXT            NULL,                       -- dorm | flat (chk_users_housing_type_vals)
+    club_name           VARCHAR(200)    NULL,                       -- 동아리
     joined_at           TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     manner_temperature  NUMERIC(5,2)    NOT NULL DEFAULT 36.50,
     trade_count         INTEGER         NOT NULL DEFAULT 0,
@@ -266,6 +268,8 @@ CREATE TABLE users (
     CONSTRAINT chk_users_trade_count   CHECK       (trade_count   >= 0),
     CONSTRAINT chk_users_warning_count CHECK       (warning_count >= 0),
     CONSTRAINT chk_users_grade         CHECK       (grade IS NULL OR grade BETWEEN 1 AND 4),
+    CONSTRAINT chk_users_housing_type_vals
+        CHECK       (housing_type IS NULL OR housing_type IN ('dorm', 'flat')),
     CONSTRAINT fk_users_auth
         FOREIGN KEY (uid)
         REFERENCES  auth.users (id)

@@ -1,6 +1,4 @@
-import Link from 'next/link'
 import { ProfileForm } from '@/components/profile/ProfileForm'
-import { SignOutButton } from '@/components/auth/SignOutButton'
 
 export default function ProfilePage() {
   return (
@@ -10,17 +8,6 @@ export default function ProfilePage() {
       </div>
 
       <ProfileForm />
-
-      <SignOutButton />
-
-      <div className="pt-2 border-t border-gray-200">
-        <Link
-          href="/my/account"
-          className="text-sm font-medium text-red-600 hover:text-red-700"
-        >
-          회원 탈퇴
-        </Link>
-      </div>
     </div>
   )
 }

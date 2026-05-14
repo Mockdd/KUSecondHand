@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { validateBio, validateNickname } from '@/lib/auth/validate'
+import { validateBio, validateClubName, validateNickname } from '@/lib/auth/validate'
 
 export async function GET() {
   const supabase = await createClient()
@@ -81,6 +81,9 @@ export async function PATCH(request: NextRequest) {
   const preferred_region_id = body.preferred_region_id as number | null | undefined
   const major_id = body.major_id as number | null | undefined
   const profile_image_url = body.profile_image_url as string | null | undefined
+  const grade = body.grade as number | string | null | undefined
+  const housing_type = body.housing_type as string | null | undefined
+  const club_name = body.club_name as string | null | undefined
 
   if (nickname !== undefined) {
     const err = validateNickname(nickname)
@@ -110,6 +113,38 @@ export async function PATCH(request: NextRequest) {
     patch.profile_image_url = profile_image_url || null
   }
 
+  if (grade !== undefined) {
+    if (grade === null || grade === '') {
+      patch.grade = null
+    } else {
+      const n = typeof grade === 'string' ? Number.parseInt(grade, 10) : Number(grade)
+      if (!Number.isInteger(n) || n < 1 || n > 4) {
+        return NextResponse.json({ error: '학년은 1~4학년 중에서 선택하세요.' }, { status: 400 })
+      }
+      patch.grade = n
+    }
+  }
+
+  if (housing_type !== undefined) {
+    if (housing_type === null || housing_type === '') {
+      patch.housing_type = null
+    } else if (housing_type !== 'dorm' && housing_type !== 'flat') {
+      return NextResponse.json({ error: '거주 형태가 올바르지 않습니다.' }, { status: 400 })
+    } else {
+      patch.housing_type = housing_type
+    }
+  }
+
+  if (club_name !== undefined) {
+    if (club_name === null || club_name === '') {
+      patch.club_name = null
+    } else {
+      const err = validateClubName(String(club_name))
+      if (err) return NextResponse.json({ error: err }, { status: 400 })
+      patch.club_name = String(club_name).trim()
+    }
+  }
+
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: '수정할 항목이 없습니다.' }, { status: 400 })
   }
@@ -119,7 +154,9 @@ export async function PATCH(request: NextRequest) {
     .update(patch)
     .eq('uid', user.id)
     .is('deleted_at', null)
-    .select('uid, nickname, bio, profile_image_url, preferred_region_id, major_id')
+    .select(
+      'uid, nickname, bio, profile_image_url, preferred_region_id, major_id, grade, housing_type, club_name',
+    )
     .maybeSingle()
 
   if (error) {
