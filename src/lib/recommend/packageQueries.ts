@@ -93,25 +93,30 @@ async function fetchProductsByCategory(
       title,
       price,
       condition,
-      product_images(image_url, display_order)
+      seller_uid,
+      product_images(image_url, display_order),
+      seller:users!fk_products_seller(uid, nickname)
     `)
     .eq('category_id', categoryId)
     .eq('status', 'selling')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(5)
+    .limit(20)
 
   if (error || !data) return []
 
   return data.map((p) => {
     const images = (p.product_images ?? []) as { image_url: string; display_order: number }[]
     const sorted = [...images].sort((a, b) => a.display_order - b.display_order)
+    const seller = Array.isArray(p.seller) ? p.seller[0] : p.seller
     return {
       pid: p.pid,
       title: p.title,
       price: p.price,
       condition: p.condition,
       image_url: sorted[0]?.image_url ?? null,
+      seller_uid: p.seller_uid ?? '',
+      seller_name: (seller as { uid: string; nickname: string } | null)?.nickname ?? '알 수 없음',
     }
   })
 }

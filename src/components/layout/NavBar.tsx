@@ -50,8 +50,8 @@ export function NavBar() {
 
       <nav className="flex items-center gap-5 text-sm">
         <Link
-          href="/packages"
-          className={`whitespace-nowrap hover:text-[#8B0029] transition-colors ${isActive('/packages') ? 'text-[#8B0029] font-semibold' : 'text-gray-600'}`}
+          href="/recommend/package"
+          className={`whitespace-nowrap hover:text-[#8B0029] transition-colors ${isActive('/recommend/package') ? 'text-[#8B0029] font-semibold' : 'text-gray-600'}`}
         >
           패키지
         </Link>

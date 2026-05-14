@@ -38,6 +38,8 @@ export interface ProductSummary {
   price: number
   condition: ProductCondition
   image_url: string | null
+  seller_uid: string
+  seller_name: string
 }
 
 export interface CategoryWithProducts {
