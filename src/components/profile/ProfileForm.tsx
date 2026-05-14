@@ -1,10 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-type Region = { region_id: number; name: string }
 type Major = { major_id: number; name: string }
 
 type ProfilePayload = {
@@ -32,28 +31,18 @@ export function ProfileForm() {
   const [success, setSuccess] = useState<string | null>(null)
 
   const [profile, setProfile] = useState<ProfilePayload | null>(null)
-  const [regions, setRegions] = useState<Region[]>([])
   const [majors, setMajors] = useState<Major[]>([])
 
   const [nickname, setNickname] = useState('')
   const [bio, setBio] = useState('')
-  const [preferredRegionId, setPreferredRegionId] = useState<string>('')
   const [majorId, setMajorId] = useState<string>('')
-
-  const selectedRegionLabel = useMemo(() => {
-    if (!preferredRegionId) return profile?.region_name ?? null
-    const id = Number.parseInt(preferredRegionId, 10)
-    const hit = regions.find((r) => r.region_id === id)
-    return hit?.name ?? profile?.region_name ?? null
-  }, [preferredRegionId, regions, profile?.region_name])
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const [pr, rg, mj] = await Promise.all([
+      const [pr, mj] = await Promise.all([
         fetch('/api/profile', { credentials: 'include' }),
-        fetch('/api/regions', { credentials: 'include' }),
         fetch('/api/majors', { credentials: 'include' }),
       ])
 
@@ -67,15 +56,8 @@ export function ProfileForm() {
       setProfile(p)
       setNickname(p.nickname ?? '')
       setBio(p.bio ?? '')
-      setPreferredRegionId(
-        p.preferred_region_id != null ? String(p.preferred_region_id) : '',
-      )
       setMajorId(p.major_id != null ? String(p.major_id) : '')
 
-      if (rg.ok) {
-        const rj = (await rg.json()) as { regions: Region[] }
-        setRegions(rj.regions ?? [])
-      }
       if (mj.ok) {
         const mjJson = (await mj.json()) as { majors: Major[] }
         setMajors(mjJson.majors ?? [])
@@ -100,8 +82,6 @@ export function ProfileForm() {
     const body: Record<string, unknown> = {
       nickname: nickname.trim(),
       bio: bio.trim() || null,
-      preferred_region_id:
-        preferredRegionId === '' ? null : Number.parseInt(preferredRegionId, 10),
     }
     if (majors.length > 0) {
       body.major_id = majorId === '' ? null : Number.parseInt(majorId, 10)
@@ -277,34 +257,6 @@ export function ProfileForm() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-[#8B0029]/15 bg-[#8B0029]/[0.04] p-4 shadow-sm">
-        <p className="text-xs font-medium text-[#8B0029] uppercase tracking-wide">활동 지역</p>
-        <p className="mt-1 text-lg font-semibold text-gray-900">
-          {selectedRegionLabel ?? (
-            <span className="text-gray-400 font-normal">아직 설정되지 않음 · 아래에서 위치 또는 목록으로 설정</span>
-          )}
-        </p>
-        <div className="mt-4">
-          <label htmlFor="regionQuick" className="block text-sm font-medium text-gray-700 mb-1">
-            활동 지역 설정
-          </label>
-          <select
-            id="regionQuick"
-            value={preferredRegionId}
-            onChange={(e) => setPreferredRegionId(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
-            disabled={saving || uploading}
-          >
-            <option value="">선택 안 함</option>
-            {regions.map((r) => (
-              <option key={r.region_id} value={r.region_id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
-
       <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 text-sm">
         <h2 className="font-semibold text-[#8B0029]">계정 정보</h2>
         <dl className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-2 text-gray-700">
@@ -314,15 +266,6 @@ export function ProfileForm() {
           <dd>{profile.student_id ?? '—'}</dd>
           <dt className="text-gray-500">학교 메일 도메인</dt>
           <dd>{profile.school_domain ?? '—'}</dd>
-          <dt className="text-gray-500">매너 온도</dt>
-          <dd className="flex flex-wrap items-center gap-2">
-            <span>{profile.manner_temperature ?? '—'}</span>
-            <span className="text-xs text-gray-500">(받은 리뷰 별점 기준)</span>
-          </dd>
-          <dt className="text-gray-500">신뢰 뱃지</dt>
-          <dd>—</dd>
-          <dt className="text-gray-500">성공 거래</dt>
-          <dd>—</dd>
           <dt className="text-gray-500">거래 횟수</dt>
           <dd>{profile.trade_count ?? '—'}</dd>
           {profile.major_name ? (
@@ -366,26 +309,6 @@ export function ProfileForm() {
             disabled={saving}
           />
           <p className="mt-1 text-xs text-gray-400">{bio.length} / 500</p>
-        </div>
-
-        <div>
-          <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
-            활동 지역
-          </label>
-          <select
-            id="region"
-            value={preferredRegionId}
-            onChange={(e) => setPreferredRegionId(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-[#8B0029] focus:outline-none focus:ring-1 focus:ring-[#8B0029]"
-            disabled={saving}
-          >
-            <option value="">선택 안 함</option>
-            {regions.map((r) => (
-              <option key={r.region_id} value={r.region_id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
         </div>
 
         {majors.length > 0 ? (
