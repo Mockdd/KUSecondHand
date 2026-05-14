@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -31,6 +31,50 @@ export function VerifyForm({ email }: Props) {
   const [studentId, setStudentId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
+  const [resendMsg, setResendMsg] = useState<string | null>(null)
+  const [cooldown, setCooldown] = useState(0)
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  function startCooldown(seconds = 60) {
+    setCooldown(seconds)
+    cooldownRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current) }, [])
+
+  async function handleResend() {
+    setResendMsg(null)
+    setError(null)
+    setResending(true)
+    try {
+      const res = await fetch('/api/auth/send-email-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email, mode: 'signup' }),
+      })
+      const j = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        setError(j.error ?? '재발송에 실패했습니다.')
+      } else {
+        setResendMsg('인증번호를 다시 보냈습니다.')
+        startCooldown(60)
+      }
+    } catch {
+      setError('네트워크 오류로 재발송에 실패했습니다.')
+    } finally {
+      setResending(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -232,11 +276,23 @@ export function VerifyForm({ email }: Props) {
         {loading ? '처리 중…' : '가입 완료'}
       </button>
 
-      <p className="text-center text-sm text-gray-500">
+      <div className="flex items-center justify-between text-sm text-gray-500">
         <Link href="/register" className="font-medium text-[#8B0029] hover:text-[#6B0020]">
           이메일 다시 입력
         </Link>
-      </p>
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={resending || cooldown > 0}
+          className="font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {resending ? '발송 중…' : cooldown > 0 ? `재발송 (${cooldown}s)` : '인증번호 재발송'}
+        </button>
+      </div>
+
+      {resendMsg && (
+        <p className="text-center text-sm text-green-600" role="status">{resendMsg}</p>
+      )}
     </form>
   )
 }
