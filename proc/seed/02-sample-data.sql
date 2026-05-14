@@ -98,11 +98,9 @@ INSERT INTO resale_price_rules
 SELECT c.category_id, v.cond::product_condition_t, 0, NULL, v.dep, v.mn, v.mx
 FROM categories c,
 (VALUES
-  ('new',      0.20, 0.70, 0.90),
-  ('like_new', 0.35, 0.55, 0.75),
-  ('good',     0.50, 0.40, 0.60),
-  ('fair',     0.65, 0.25, 0.45),
-  ('poor',     0.75, 0.15, 0.35)
+  ('high',   0.25, 0.65, 0.85),
+  ('medium', 0.58, 0.33, 0.53),
+  ('low',    0.75, 0.15, 0.35)
 ) AS v(cond, dep, mn, mx)
 WHERE c.name = '상의';
 
@@ -113,11 +111,9 @@ INSERT INTO resale_price_rules
 SELECT c.category_id, v.cond::product_condition_t, 0, NULL, v.dep, v.mn, v.mx
 FROM categories c,
 (VALUES
-  ('new',      0.20, 0.70, 0.90),
-  ('like_new', 0.35, 0.55, 0.75),
-  ('good',     0.50, 0.40, 0.60),
-  ('fair',     0.65, 0.25, 0.45),
-  ('poor',     0.75, 0.15, 0.35)
+  ('high',   0.25, 0.65, 0.85),
+  ('medium', 0.58, 0.33, 0.53),
+  ('low',    0.75, 0.15, 0.35)
 ) AS v(cond, dep, mn, mx)
 WHERE c.name = '하의';
 
@@ -128,11 +124,9 @@ INSERT INTO resale_price_rules
 SELECT c.category_id, v.cond::product_condition_t, 0, NULL, v.dep, v.mn, v.mx
 FROM categories c,
 (VALUES
-  ('new',      0.15, 0.75, 1.00),
-  ('like_new', 0.30, 0.60, 0.80),
-  ('good',     0.45, 0.45, 0.65),
-  ('fair',     0.60, 0.30, 0.50),
-  ('poor',     0.75, 0.15, 0.35)
+  ('high',   0.22, 0.68, 0.92),
+  ('medium', 0.52, 0.38, 0.58),
+  ('low',    0.75, 0.15, 0.35)
 ) AS v(cond, dep, mn, mx)
 WHERE c.name = '가방/지갑';
 
@@ -143,11 +137,9 @@ INSERT INTO resale_price_rules
 SELECT c.category_id, v.cond::product_condition_t, 0, NULL, v.dep, v.mn, v.mx
 FROM categories c,
 (VALUES
-  ('new',      0.25, 0.65, 0.85),
-  ('like_new', 0.40, 0.50, 0.70),
-  ('good',     0.50, 0.40, 0.60),
-  ('fair',     0.60, 0.30, 0.50),
-  ('poor',     0.75, 0.15, 0.35)
+  ('high',   0.32, 0.58, 0.78),
+  ('medium', 0.55, 0.35, 0.55),
+  ('low',    0.75, 0.15, 0.35)
 ) AS v(cond, dep, mn, mx)
 WHERE c.name = '일반 도서';
 
@@ -158,11 +150,9 @@ INSERT INTO resale_price_rules
 SELECT c.category_id, v.cond::product_condition_t, 0, NULL, v.dep, v.mn, v.mx
 FROM categories c,
 (VALUES
-  ('new',      0.20, 0.70, 0.90),
-  ('like_new', 0.35, 0.55, 0.75),
-  ('good',     0.50, 0.40, 0.60),
-  ('fair',     0.65, 0.25, 0.45),
-  ('poor',     0.80, 0.10, 0.30)
+  ('high',   0.28, 0.63, 0.83),
+  ('medium', 0.58, 0.28, 0.48),
+  ('low',    0.80, 0.10, 0.30)
 ) AS v(cond, dep, mn, mx)
 WHERE c.name = '문제집/참고서';
 
@@ -173,13 +163,11 @@ INSERT INTO resale_price_rules
 SELECT c.category_id, v.cond::product_condition_t, v.min_mo, v.max_mo, v.dep, v.mn, v.mx
 FROM categories c,
 (VALUES
-  ('new',       0,    6,  0.15, 0.75, 1.00),
-  ('like_new',  0,   12,  0.25, 0.65, 0.85),
-  ('like_new', 12,   36,  0.35, 0.55, 0.75),
-  ('good',      0,   24,  0.40, 0.50, 0.70),
-  ('good',     24, NULL,  0.50, 0.40, 0.60),
-  ('fair',      0, NULL,  0.60, 0.30, 0.50),
-  ('poor',      0, NULL,  0.75, 0.15, 0.35)
+  ('high',   0,   12,  0.20, 0.68, 0.90),
+  ('high',   12,  36,  0.32, 0.58, 0.78),
+  ('medium', 0,   24,  0.42, 0.48, 0.65),
+  ('medium', 24, NULL, 0.50, 0.40, 0.58),
+  ('low',    0, NULL,  0.68, 0.22, 0.42)
 ) AS v(cond, min_mo, max_mo, dep, mn, mx)
 WHERE c.name = '카메라';
 
@@ -288,17 +276,17 @@ BEGIN
       (SELECT category_id FROM categories WHERE name = '노트북/태블릿'),
       v.title, v.price, v.cond::product_condition_t, v.descr, v.status::product_status_t
   FROM (VALUES
-      (p_nb1, s1, '맥북 에어 M2 13인치 8GB/256GB 미드나이트', 1050000, 'like_new',
+      (p_nb1, s1, '맥북 에어 M2 13인치 8GB/256GB 미드나이트', 1050000, 'high',
        '2023년 초 구매, 충전기 포함, 배터리 92% 유지, 외관 기스 없음', 'selling'),
-      (p_nb2, s2, '아이패드 에어 5세대 WiFi 64GB 스페이스 그레이', 480000, 'good',
+      (p_nb2, s2, '아이패드 에어 5세대 WiFi 64GB 스페이스 그레이', 480000, 'medium',
        '애플펜슬 1세대 포함, 필름 부착 상태, 잔기스 약간', 'selling'),
-      (p_nb3, s3, '삼성 갤럭시 탭 S9 FE 256GB 그린', 420000, 'like_new',
+      (p_nb3, s3, '삼성 갤럭시 탭 S9 FE 256GB 그린', 420000, 'high',
        'S펜 포함, 구매 6개월, 케이스 포함 드림', 'selling'),
-      (gen_random_uuid(), s1, '레노버 씽크패드 X1 Carbon Gen 11', 1300000, 'good',
+      (gen_random_uuid(), s1, '레노버 씽크패드 X1 Carbon Gen 11', 1300000, 'medium',
        '업무용 사용, i7-1365U/16GB/512GB, 충전기 포함', 'selling'),
-      (gen_random_uuid(), s2, '델 XPS 15 9530 OLED 터치스크린', 1650000, 'like_new',
+      (gen_random_uuid(), s2, '델 XPS 15 9530 OLED 터치스크린', 1650000, 'high',
        'i9-13900H/32GB/1TB, RTX 4060, 구매 4개월 사용', 'selling'),
-      (gen_random_uuid(), s3, '애플 매직키보드 한국어 Touch ID', 95000, 'good',
+      (gen_random_uuid(), s3, '애플 매직키보드 한국어 Touch ID', 95000, 'medium',
        '맥미니 교체로 판매, 배터리 정상 작동', 'selling')
   ) AS v(pid, seller_uid, title, price, cond, descr, status);
 
@@ -309,15 +297,15 @@ BEGIN
       (SELECT category_id FROM categories WHERE name = '이어폰/헤드폰'),
       v.title, v.price, v.cond::product_condition_t, v.descr, v.status::product_status_t
   FROM (VALUES
-      (p_ear1, s2, 'AirPods Pro 2세대 MagSafe 충전 케이스', 230000, 'like_new',
+      (p_ear1, s2, 'AirPods Pro 2세대 MagSafe 충전 케이스', 230000, 'high',
        '구매 5개월, 이어팁 교체 완료, 케이스 기스 없음', 'selling'),
-      (p_ear2, s3, '소니 WH-1000XM5 노이즈캔슬링 헤드폰 블랙', 290000, 'good',
+      (p_ear2, s3, '소니 WH-1000XM5 노이즈캔슬링 헤드폰 블랙', 290000, 'medium',
        '1년 사용, 쿠션 교체 완료, 케이블 포함', 'selling'),
-      (gen_random_uuid(), s1, '삼성 갤럭시 버즈2 프로 그라파이트', 130000, 'good',
+      (gen_random_uuid(), s1, '삼성 갤럭시 버즈2 프로 그라파이트', 130000, 'medium',
        '폰 교체로 판매, 배터리 정상, 케이스 포함', 'selling'),
-      (gen_random_uuid(), s2, '보스 QuietComfort 45 화이트', 250000, 'fair',
+      (gen_random_uuid(), s2, '보스 QuietComfort 45 화이트', 250000, 'medium',
        '이어쿠션 마모 있음, 노이즈캔슬링 정상 작동', 'selling'),
-      (gen_random_uuid(), s3, 'JBL Tune 760NC 블루투스 헤드폰', 75000, 'good',
+      (gen_random_uuid(), s3, 'JBL Tune 760NC 블루투스 헤드폰', 75000, 'medium',
        '구매 8개월, 접이식 정상, 케이블 포함', 'selling')
   ) AS v(pid, seller_uid, title, price, cond, descr, status);
 
@@ -328,21 +316,21 @@ BEGIN
       (SELECT category_id FROM categories WHERE name = '전공 교재'),
       v.title, v.price, v.cond::product_condition_t, v.descr, v.status::product_status_t
   FROM (VALUES
-      (p_bk1, s1, '자료구조론 (C로 배우는 자료구조) 개정3판', 18000, 'good',
+      (p_bk1, s1, '자료구조론 (C로 배우는 자료구조) 개정3판', 18000, 'medium',
        '형광펜 필기 약간, 표지 멀쩡, 컴공 필수 교재', 'selling'),
-      (p_bk2, s2, '경영학원론 (피터 드러커) 최신판', 22000, 'like_new',
+      (p_bk2, s2, '경영학원론 (피터 드러커) 최신판', 22000, 'high',
        '연필 필기 지운 흔적 약간, 전반적으로 깨끗', 'selling'),
-      (p_bk3, s1, 'Introduction to Algorithms (CLRS) 4th Edition', 45000, 'good',
+      (p_bk3, s1, 'Introduction to Algorithms (CLRS) 4th Edition', 45000, 'medium',
        '알고리즘 수업 사용, 연필 밑줄 있음, 영어 원서', 'selling'),
-      (p_bk4, s2, '회계학원론 제5판 (저자: 김동일)', 20000, 'fair',
+      (p_bk4, s2, '회계학원론 제5판 (저자: 김동일)', 20000, 'medium',
        '많이 사용, 볼펜 밑줄 다수, 표지 약간 손상', 'selling'),
-      (gen_random_uuid(), s3, '회로이론 (Nilsson & Riedel) 11th Edition', 38000, 'good',
+      (gen_random_uuid(), s3, '회로이론 (Nilsson & Riedel) 11th Edition', 38000, 'medium',
        '전기전자 필수, 연필 필기 있음, 답안지 포함', 'selling'),
-      (gen_random_uuid(), s1, '프로그래밍 언어론 (Sebesta) 12판', 30000, 'like_new',
+      (gen_random_uuid(), s1, '프로그래밍 언어론 (Sebesta) 12판', 30000, 'high',
        '한 학기 사용, 깨끗한 편, 형광펜 소량', 'selling'),
-      (gen_random_uuid(), s2, '미적분학 (Stewart) 8판 - 짝수 문제 풀이집 포함', 32000, 'good',
+      (gen_random_uuid(), s2, '미적분학 (Stewart) 8판 - 짝수 문제 풀이집 포함', 32000, 'medium',
        '1학년 수학, 연필 필기, 풀이집 세트 판매', 'selling'),
-      (gen_random_uuid(), s3, '선형대수학 개론 (이상구 저) 최신판', 17000, 'like_new',
+      (gen_random_uuid(), s3, '선형대수학 개론 (이상구 저) 최신판', 17000, 'high',
        '거의 새것, 연필 필기 2~3곳, 표지 깨끗', 'selling')
   ) AS v(pid, seller_uid, title, price, cond, descr, status);
 
@@ -353,13 +341,13 @@ BEGIN
       (SELECT category_id FROM categories WHERE name = '문구/오피스'),
       v.title, v.price, v.cond::product_condition_t, v.descr, v.status::product_status_t
   FROM (VALUES
-      (gen_random_uuid(), s3, '파이롯트 만년필 카쿠노 세트 (잉크 포함)', 35000, 'like_new',
+      (gen_random_uuid(), s3, '파이롯트 만년필 카쿠노 세트 (잉크 포함)', 35000, 'high',
        '선물 받아 잠깐 사용, 잉크 카트리지 2개 포함', 'selling'),
-      (gen_random_uuid(), s1, '카시오 공학용 계산기 FX-991EX', 18000, 'good',
+      (gen_random_uuid(), s1, '카시오 공학용 계산기 FX-991EX', 18000, 'medium',
        '수업 사용, 버튼 정상 작동, 외관 기스 약간', 'selling'),
-      (gen_random_uuid(), s2, '코멕스 A4 30공 바인더 3개 세트', 12000, 'like_new',
+      (gen_random_uuid(), s2, '코멕스 A4 30공 바인더 3개 세트', 12000, 'high',
        '신학기 준비 과잉 구매, 2개 사용, 1개 미개봉', 'selling'),
-      (gen_random_uuid(), s3, '스테들러 형광펜 세트 10색 + 마카 세트', 9000, 'good',
+      (gen_random_uuid(), s3, '스테들러 형광펜 세트 10색 + 마카 세트', 9000, 'medium',
        '대부분 잉크 절반 이상 남음, 사용감 있음', 'selling')
   ) AS v(pid, seller_uid, title, price, cond, descr, status);
 
@@ -370,13 +358,13 @@ BEGIN
       (SELECT category_id FROM categories WHERE name = '주방용품'),
       v.title, v.price, v.cond::product_condition_t, v.descr, v.status::product_status_t
   FROM (VALUES
-      (p_kt1, s2, '쿠첸 미니 전기밥솥 3인용 (CR-0375)', 45000, 'good',
+      (p_kt1, s2, '쿠첸 미니 전기밥솥 3인용 (CR-0375)', 45000, 'medium',
        '자취 1년 사용, 깨끗하게 관리, 계량컵 포함', 'selling'),
-      (gen_random_uuid(), s1, '드롱기 드립 커피메이커 ICM14011', 55000, 'good',
+      (gen_random_uuid(), s1, '드롱기 드립 커피메이커 ICM14011', 55000, 'medium',
        '카페 생활 1년, 내부 스케일 제거 완료', 'selling'),
-      (gen_random_uuid(), s3, '테팔 전기 주전자 BF6138 1.7L 화이트', 28000, 'like_new',
+      (gen_random_uuid(), s3, '테팔 전기 주전자 BF6138 1.7L 화이트', 28000, 'high',
        '구매 3개월, 깨끗한 상태, 원산지 EU', 'selling'),
-      (gen_random_uuid(), s2, '해피콜 다이아몬드 후라이팬 3종 세트', 38000, 'fair',
+      (gen_random_uuid(), s2, '해피콜 다이아몬드 후라이팬 3종 세트', 38000, 'medium',
        '1년 사용, 코팅 약간 벗겨짐, 조리 가능 상태', 'selling')
   ) AS v(pid, seller_uid, title, price, cond, descr, status);
 
@@ -387,13 +375,13 @@ BEGIN
       (SELECT category_id FROM categories WHERE name = '가구/인테리어'),
       v.title, v.price, v.cond::product_condition_t, v.descr, v.status::product_status_t
   FROM (VALUES
-      (p_furn1, s3, '1인용 원목 학생 책상 120×60 (직거래)', 85000, 'good',
+      (p_furn1, s3, '1인용 원목 학생 책상 120×60 (직거래)', 85000, 'medium',
        '이케아 LINNMON 조합, 2년 사용, 기스 약간', 'selling'),
-      (gen_random_uuid(), s1, '허먼밀러 에어론 의자 사이즈B 리퍼', 650000, 'good',
+      (gen_random_uuid(), s1, '허먼밀러 에어론 의자 사이즈B 리퍼', 650000, 'medium',
        '판매점 리퍼품 구매, 2년 사용, 허리 지지 정상', 'selling'),
-      (gen_random_uuid(), s2, '이케아 KALLAX 2×4 책장 화이트', 45000, 'fair',
+      (gen_random_uuid(), s2, '이케아 KALLAX 2×4 책장 화이트', 45000, 'medium',
        '이사 중 모서리 약간 손상, 조립 상태로 드림', 'selling'),
-      (gen_random_uuid(), s3, '필립스 LED 스탠드 조명 HUE 화이트 앰비언스', 62000, 'like_new',
+      (gen_random_uuid(), s3, '필립스 LED 스탠드 조명 HUE 화이트 앰비언스', 62000, 'high',
        '자취방 이사로 판매, 앱 제어 정상, 전구 포함', 'selling')
   ) AS v(pid, seller_uid, title, price, cond, descr, status);
 
@@ -404,13 +392,13 @@ BEGIN
       (SELECT category_id FROM categories WHERE name = '스마트폰'),
       v.title, v.price, v.cond::product_condition_t, v.descr, v.status::product_status_t
   FROM (VALUES
-      (p_ph1, s1, '아이폰 15 Pro 256GB 내추럴 티타늄 (SKT)', 1050000, 'like_new',
+      (p_ph1, s1, '아이폰 15 Pro 256GB 내추럴 티타늄 (SKT)', 1050000, 'high',
        '구매 4개월, 케이스·필름 부착, 배터리 97%', 'selling'),
-      (p_ph2, s3, '갤럭시 S24 256GB 코발트 바이올렛 (자급제)', 880000, 'like_new',
+      (p_ph2, s3, '갤럭시 S24 256GB 코발트 바이올렛 (자급제)', 880000, 'high',
        '개봉 6개월, 외관 무기스, 충전기 포함', 'selling'),
-      (gen_random_uuid(), s2, '아이폰 13 128GB 스타라이트 (KT)', 620000, 'good',
+      (gen_random_uuid(), s2, '아이폰 13 128GB 스타라이트 (KT)', 620000, 'medium',
        '2년 사용, 배터리 89%, 기스 약간, 잘 작동', 'selling'),
-      (gen_random_uuid(), s1, '갤럭시 A54 5G 256GB 라임 (자급제)', 390000, 'good',
+      (gen_random_uuid(), s1, '갤럭시 A54 5G 256GB 라임 (자급제)', 390000, 'medium',
        '1년 사용, 화면·카메라 정상, 케이스 포함', 'selling')
   ) AS v(pid, seller_uid, title, price, cond, descr, status);
 
@@ -421,11 +409,11 @@ BEGIN
       (SELECT category_id FROM categories WHERE name = '침구류'),
       v.title, v.price, v.cond::product_condition_t, v.descr, v.status::product_status_t
   FROM (VALUES
-      (gen_random_uuid(), s2, '이케아 HÄXÖRT 싱글 이불 세트 + 커버', 28000, 'good',
+      (gen_random_uuid(), s2, '이케아 HÄXÖRT 싱글 이불 세트 + 커버', 28000, 'medium',
        '세탁 완료, 보풀 약간, 기숙사 퇴사로 판매', 'selling'),
-      (gen_random_uuid(), s3, '토퍼 매트리스 싱글 5cm 메모리폼 (직거래)', 55000, 'good',
+      (gen_random_uuid(), s3, '토퍼 매트리스 싱글 5cm 메모리폼 (직거래)', 55000, 'medium',
        '1년 사용, 세탁 커버 포함, 외관 오염 없음', 'selling'),
-      (gen_random_uuid(), s1, '호텔식 구스다운 베개 2개 세트', 32000, 'like_new',
+      (gen_random_uuid(), s1, '호텔식 구스다운 베개 2개 세트', 32000, 'high',
        '사용 3개월, 세탁 완료, 커버 포함', 'selling')
   ) AS v(pid, seller_uid, title, price, cond, descr, status);
 

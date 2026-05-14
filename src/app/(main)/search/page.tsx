@@ -13,11 +13,9 @@ import type { ProductSearchResult, PackageSearchResult } from '@/lib/search/hybr
 // ──────────────────────────────────────────────────────────────────────────────
 
 const CONDITION_LABEL: Record<string, string> = {
-  new: '새것',
-  like_new: '거의 새것',
-  good: '양호',
-  fair: '보통',
-  poor: '낡음',
+  high: '상',
+  medium: '중',
+  low: '하',
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

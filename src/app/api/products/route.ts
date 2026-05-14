@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { productListSelect } from '@/lib/products/sellerEmbed'
 import { createEmbedding, buildProductEmbeddingText } from '@/lib/openai/embeddings'
+import type { ProductConditionEnum } from '@/types/supabase'
+
+const PRODUCT_CONDITIONS: ProductConditionEnum[] = ['high', 'medium', 'low']
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -43,7 +46,10 @@ export async function POST(request: NextRequest) {
 
   if (!title?.trim()) return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 })
   if (typeof price !== 'number' || price < 0) return NextResponse.json({ error: '올바른 가격을 입력해주세요.' }, { status: 400 })
-  if (!condition) return NextResponse.json({ error: '상품 상태를 선택해주세요.' }, { status: 400 })
+  if (!PRODUCT_CONDITIONS.includes(condition as ProductConditionEnum)) {
+    return NextResponse.json({ error: '상태를 선택해주세요.' }, { status: 400 })
+  }
+  const productCondition = condition as ProductConditionEnum
   if (!category_id) return NextResponse.json({ error: '카테고리를 선택해주세요.' }, { status: 400 })
 
   const { data: product, error: productError } = await supabase
@@ -52,7 +58,7 @@ export async function POST(request: NextRequest) {
       seller_uid: user.id,
       title: title.trim(),
       price,
-      condition,
+      condition: productCondition,
       category_id,
       description: description?.trim() || null,
     })

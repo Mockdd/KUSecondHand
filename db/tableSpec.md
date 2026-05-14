@@ -142,7 +142,7 @@
 
 | 컬럼 | 허용 값 |
 |------|--------|
-| condition | `'new'`, `'like_new'`, `'good'`, `'fair'`, `'poor'` |
+| condition | `'high'`, `'medium'`, `'low'` (상·중·하) |
 | status | `'selling'`, `'reserved'`, `'sold'` |
 
 **제약 요약**

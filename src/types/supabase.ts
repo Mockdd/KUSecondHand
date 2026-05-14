@@ -25,6 +25,8 @@ export type LanguagePrefEnum = 'ko' | 'en'
 export type MatchStatusEnum = 'pending' | 'matched' | 'completed' | 'cancelled'
 export type CertStatusEnum = 'pending' | 'approved' | 'rejected'
 export type ListingStatusEnum = 'selling' | 'reserved' | 'sold'
+/** DB `product_condition_t` — 상·중·하 */
+export type ProductConditionEnum = 'high' | 'medium' | 'low'
 export type TemplateTypeEnum = 'DORM_BASIC' | 'FLAT_FULL' | 'INCOMING_DORM'
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -394,7 +396,7 @@ export interface Database {
           category_id: number
           title: string
           price: number
-          condition: string
+          condition: ProductConditionEnum
           status: ListingStatusEnum
           created_at: string
           deleted_at: string | null
@@ -405,7 +407,7 @@ export interface Database {
           category_id: number
           title: string
           price: number
-          condition: string
+          condition: ProductConditionEnum
           status?: ListingStatusEnum
           created_at?: string
           deleted_at?: string | null
@@ -413,7 +415,7 @@ export interface Database {
         Update: {
           title?: string
           price?: number
-          condition?: string
+          condition?: ProductConditionEnum
           status?: ListingStatusEnum
           deleted_at?: string | null
         }
@@ -448,6 +450,7 @@ export interface Database {
       match_status: MatchStatusEnum
       cert_status: CertStatusEnum
       listing_status: ListingStatusEnum
+      product_condition: ProductConditionEnum
       template_type: TemplateTypeEnum
     }
   }

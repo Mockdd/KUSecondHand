@@ -1,12 +1,10 @@
-export type ProductCondition = 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+export type ProductCondition = 'high' | 'medium' | 'low'
 export type HousingType = 'dorm' | 'flat'
 
 export const CONDITION_LABELS: Record<ProductCondition, string> = {
-  new: '미개봉 / 새 상품',
-  like_new: '거의 새것',
-  good: '상태 양호',
-  fair: '사용감 있음',
-  poor: '많이 사용함',
+  high: '상',
+  medium: '중',
+  low: '하',
 }
 
 export const HOUSING_TYPE_LABELS: Record<HousingType, string> = {

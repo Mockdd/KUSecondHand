@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: '시간표 추천', href: '/recommendations' },
   { label: '채팅',     href: '/chat' },
   { label: '위시리스트', href: '/wishlist' },
-  { label: '상품 등록', href: '/products/new' },
+  { label: '판매', href: '/products/new' },
   { label: '마이페이지', href: '/my/profile' },
 ]
 

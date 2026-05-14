@@ -9,7 +9,7 @@ interface Props {
   isLoading: boolean
 }
 
-const CONDITIONS: ProductCondition[] = ['new', 'like_new', 'good', 'fair', 'poor']
+const CONDITIONS: ProductCondition[] = ['high', 'medium', 'low']
 
 export function ResalePriceForm({ categories, onSubmit, isLoading }: Props) {
   const [categoryId, setCategoryId] = useState<number | ''>('')

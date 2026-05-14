@@ -26,7 +26,7 @@ interface ListRow {
   title: string
   price: number
   status: 'selling' | 'reserved' | 'sold'
-  condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+  condition: 'high' | 'medium' | 'low'
   view_count: number
   created_at: string
   product_images: { image_url: string; display_order: number }[] | null
@@ -178,7 +178,7 @@ interface DetailRow {
   price: number
   description: string | null
   status: 'selling' | 'reserved' | 'sold'
-  condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+  condition: 'high' | 'medium' | 'low'
   view_count: number
   created_at: string
   category: EmbeddedOne<{ category_id: number; name: string }>

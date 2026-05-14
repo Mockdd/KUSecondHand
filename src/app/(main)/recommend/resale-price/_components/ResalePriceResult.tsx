@@ -81,7 +81,7 @@ export function ResalePriceResultView({ result }: Props) {
         className="block w-full rounded-lg py-2.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
         style={{ backgroundColor: '#8B0029' }}
       >
-        이 가격으로 상품 등록하기 →
+        이 가격으로 판매하기 →
       </Link>
     </div>
   )

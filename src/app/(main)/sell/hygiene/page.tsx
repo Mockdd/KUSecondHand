@@ -6,7 +6,7 @@ import { useEffect } from 'react'
 export default function HygienePage() {
   const router = useRouter()
   useEffect(() => {
-    router.replace('/sell/template')
+    router.replace('/products/new')
   }, [router])
   return null
 }

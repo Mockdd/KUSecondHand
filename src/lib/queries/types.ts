@@ -107,8 +107,8 @@ export interface ProductListItem {
   title: string
   price: number
   status: 'selling' | 'reserved' | 'sold'
-  // DB enum: product_condition_t.
-  condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+  // DB enum: product_condition_t (high | medium | low).
+  condition: 'high' | 'medium' | 'low'
   view_count: number
   created_at: string
   thumbnail_url: string | null
@@ -161,7 +161,7 @@ export interface ProductDetail {
   price: number
   description: string | null
   status: 'selling' | 'reserved' | 'sold'
-  condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+  condition: 'high' | 'medium' | 'low'
   view_count: number
   created_at: string
   category: CategorySummary

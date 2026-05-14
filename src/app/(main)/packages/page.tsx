@@ -325,14 +325,8 @@ export default function PackagesPage() {
         </div>
       )}
 
-      {/* 셀러 등록 + 조건 변경 */}
-      <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-        <Link
-          href="/sell/template"
-          className="inline-block rounded-lg border border-indigo-300 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
-        >
-          셀러로 등록하기 →
-        </Link>
+      {/* 조건 변경 */}
+      <div className="pt-4 border-t border-gray-100 flex justify-end">
         <Link href="/my/profile" className="text-xs text-gray-400 hover:text-gray-600">
           조건 변경하기
         </Link>

@@ -42,7 +42,7 @@ export function HeroSection() {
               href="/products/new"
               className="rounded-full border border-white/60 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
             >
-              상품 등록
+              판매
             </Link>
           </div>
         </div>

@@ -3,25 +3,21 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 type Category = { category_id: number; parent_id: number | null; name: string }
-type Tab = 'product' | 'package'
 
+/** DB `product_condition_t` — 상·중·하 */
 const CONDITION_OPTIONS = [
-  { value: 'new',      label: '새 상품' },
-  { value: 'like_new', label: '거의 새것' },
-  { value: 'good',     label: '상태 양호' },
-  { value: 'fair',     label: '보통' },
-  { value: 'poor',     label: '하자 있음' },
+  { value: 'high', label: '상' },
+  { value: 'medium', label: '중' },
+  { value: 'low', label: '하' },
 ]
 
 function NewProductPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
-  const [tab, setTab] = useState<Tab>('product')
 
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState(searchParams.get('price') ?? '')
@@ -79,7 +75,7 @@ function NewProductPageInner() {
 
     if (!title.trim()) return setError('제목을 입력해주세요.')
     if (!price || Number(price) < 0) return setError('올바른 가격을 입력해주세요.')
-    if (!condition) return setError('상품 상태를 선택해주세요.')
+    if (!condition) return setError('상태를 선택해주세요.')
     if (!categoryId) return setError('카테고리를 선택해주세요.')
 
     setUploading(true)
@@ -124,25 +120,7 @@ function NewProductPageInner() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">상품 등록</h1>
-
-      {/* 탭 */}
-      <div className="flex gap-1 rounded-xl bg-gray-100 p-1 w-fit">
-        <button
-          onClick={() => setTab('product')}
-          className={`rounded-lg px-5 py-2 text-sm font-medium transition-colors ${
-            tab === 'product' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          일반 상품
-        </button>
-        <button
-          onClick={() => router.push('/sell/template')}
-          className="rounded-lg px-5 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          패키지
-        </button>
-      </div>
+      <h1 className="text-2xl font-bold text-gray-900">판매</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
 
@@ -190,34 +168,10 @@ function NewProductPageInner() {
             <p className="mt-1 text-xs text-gray-400 text-right">{title.length}/200</p>
           </div>
 
-          {/* 가격 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              가격 <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                min={0}
-                placeholder="0"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-8 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">원</span>
-            </div>
-            <p className="mt-1 text-xs text-gray-400">
-              적정 가격을 모르시나요?{' '}
-              <Link href="/recommend/resale-price" className="text-[#8B0029] hover:underline">
-                시세 추천 확인 →
-              </Link>
-            </p>
-          </div>
-
           {/* 상태 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              상품 상태 <span className="text-red-500">*</span>
+              상태 <span className="text-red-500">*</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {CONDITION_OPTIONS.map((opt) => (
@@ -280,6 +234,24 @@ function NewProductPageInner() {
             />
           </div>
 
+          {/* 가격 — 등록 버튼 바로 위 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              가격 <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                min={0}
+                placeholder="0"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-8 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">원</span>
+            </div>
+          </div>
+
           {error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
           )}
@@ -301,7 +273,7 @@ export default function NewProductPage() {
     <Suspense
       fallback={
         <div className="max-w-2xl space-y-6">
-          <h1 className="text-2xl font-bold text-gray-900">상품 등록</h1>
+          <h1 className="text-2xl font-bold text-gray-900">판매</h1>
           <p className="text-sm text-gray-500">불러오는 중…</p>
         </div>
       }

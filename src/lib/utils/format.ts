@@ -164,11 +164,9 @@ export const formatScore = (score: number): string => {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const CONDITION_LABELS: Record<string, string> = {
-  new: '새것',
-  like_new: '거의 새것',
-  good: '양호',
-  fair: '보통',
-  poor: '하',
+  high: '상',
+  medium: '중',
+  low: '하',
 }
 
 /**

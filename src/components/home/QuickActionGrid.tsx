@@ -62,7 +62,7 @@ const ACTIONS = [
   },
   {
     href: '/products/new',
-    label: '상품 등록',
+    label: '판매',
     desc: '판매할 물건 올리기',
     Icon: PlusCircleIcon,
     bgColor: '#FFFBEB',

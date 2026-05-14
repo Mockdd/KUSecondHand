@@ -232,7 +232,7 @@
 | category_id | INT | FK | → `Category.category_id` |
 | title | VARCHAR(200) | | 상품명 |
 | price | INT | | 현재 게시 가격 (원) |
-| condition | ENUM | | 'new', 'like_new', 'good', 'fair', 'poor' |
+| condition | ENUM | | 'high', 'medium', 'low' (상·중·하) |
 | description | TEXT | | 본문 |
 | status | ENUM | | 'selling', 'reserved', 'sold' |
 | created_at | DATETIME | | 등록 시각 |

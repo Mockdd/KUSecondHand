@@ -8,6 +8,7 @@ import { ChatButton } from '@/components/chat/ChatButton'
 import { createClient } from '@/lib/supabase/server'
 import { isTrustedSeller } from '@/lib/trust/constants'
 import { productDetailSelect } from '@/lib/products/sellerEmbed'
+import { formatCondition } from '@/lib/utils/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,7 +75,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <div className="space-y-3">
           <h1 className="text-2xl font-bold text-gray-900">{row.title}</h1>
           <p className="text-xl font-semibold">{row.price.toLocaleString()}원</p>
-          <p className="text-sm text-gray-600">상태: {row.condition}</p>
+          <p className="text-sm text-gray-600">상태: {formatCondition(row.condition)}</p>
 
           <WishlistButton pid={pid} />
           {seller && <ChatButton pid={pid} sellerUid={seller.uid} />}

@@ -76,7 +76,7 @@ DELETE FROM products
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, c.category_id,
        '[DEV SEED] 카시오 fx-991ES PLUS 공학용 계산기',
-       25000, 'good'::product_condition_t, 'selling'::product_status_t, 180,
+       25000, 'medium'::product_condition_t, 'selling'::product_status_t, 180,
        E'통계 실습용으로 잘 썼어요. 케이스 포함, 배터리 새것입니다.\n양도 가능 시간 평일 저녁.',
        NOW() - INTERVAL '3 days'
   FROM users u, categories c
@@ -87,7 +87,7 @@ SELECT u.uid, c.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] 통계학 원론 (제5판) 거의 새책',
-       18000, 'like_new'::product_condition_t, 'selling'::product_status_t, 95,
+       18000, 'high'::product_condition_t, 'selling'::product_status_t, 95,
        '한 학기 수강 후 거의 펼치지 않았습니다. 표시 거의 없음.',
        NOW() - INTERVAL '5 days'
   FROM users u, categories sub
@@ -99,7 +99,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] Database System Concepts 7판',
-       35000, 'good'::product_condition_t, 'selling'::product_status_t, 160,
+       35000, 'medium'::product_condition_t, 'selling'::product_status_t, 160,
        '연필로 일부 밑줄·필기 있음. 표지 깨끗.',
        NOW() - INTERVAL '8 days'
   FROM users u, categories sub
@@ -111,7 +111,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] 핸즈온 머신러닝 2판 (필기 多)',
-       22000, 'fair'::product_condition_t, 'selling'::product_status_t, 220,
+       22000, 'medium'::product_condition_t, 'selling'::product_status_t, 220,
        '실습 위주로 펜 필기 많음. 학습용으로 가성비 OK.',
        NOW() - INTERVAL '12 days'
   FROM users u, categories sub
@@ -123,7 +123,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] ISLR (An Introduction to Statistical Learning)',
-       28000, 'good'::product_condition_t, 'reserved'::product_status_t, 75,
+       28000, 'medium'::product_condition_t, 'reserved'::product_status_t, 75,
        '예약 진행 중입니다. 영문판, 연필 밑줄 일부.',
        NOW() - INTERVAL '2 days'
   FROM users u, categories sub
@@ -135,7 +135,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] 통계학개론 정의용 4판 (밑줄 多)',
-       12000, 'fair'::product_condition_t, 'selling'::product_status_t, 50,
+       12000, 'medium'::product_condition_t, 'selling'::product_status_t, 50,
        '펜 밑줄 많고 변색 약간 있음. 가격 저렴하게 처분.',
        NOW() - INTERVAL '10 days'
   FROM users u, categories sub
@@ -147,7 +147,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, c.category_id,
        '[DEV SEED] HP Prime G2 그래픽 계산기',
-       220000, 'like_new'::product_condition_t, 'selling'::product_status_t, 350,
+       220000, 'high'::product_condition_t, 'selling'::product_status_t, 350,
        '풀구성 (본체+케이스+매뉴얼). 거의 새것 컨디션.',
        NOW() - INTERVAL '1 days'
   FROM users u, categories c
@@ -158,7 +158,7 @@ SELECT u.uid, c.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, c.category_id,
        '[DEV SEED] 보스턴 BX2 공학용 계산기 (배터리 미포함)',
-       45000, 'good'::product_condition_t, 'reserved'::product_status_t, 130,
+       45000, 'medium'::product_condition_t, 'reserved'::product_status_t, 130,
        '예약 진행 중. 배터리 별도 구매 필요, 본체만 양도.',
        NOW() - INTERVAL '6 days'
   FROM users u, categories c
@@ -169,7 +169,7 @@ SELECT u.uid, c.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] 노트북 거치대 (각도 6단)',
-       18000, 'good'::product_condition_t, 'selling'::product_status_t, 88,
+       18000, 'medium'::product_condition_t, 'selling'::product_status_t, 88,
        '6단계 각도 조절. 13~16인치 호환. 본체만.',
        NOW() - INTERVAL '4 days'
   FROM users u, categories sub
@@ -181,7 +181,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] 알루미늄 노트북 받침대 — 작동 일부 이슈',
-       8000, 'poor'::product_condition_t, 'selling'::product_status_t, 35,
+       8000, 'low'::product_condition_t, 'selling'::product_status_t, 35,
        '높이 조절 레버 한쪽이 헐거움. 사용에는 큰 지장 없음.',
        NOW() - INTERVAL '15 days'
   FROM users u, categories sub
@@ -193,7 +193,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] 코딩용 모니터 받침대',
-       25000, 'good'::product_condition_t, 'selling'::product_status_t, 110,
+       25000, 'medium'::product_condition_t, 'selling'::product_status_t, 110,
        '24~27인치 모니터용. 안정적인 무게감.',
        NOW() - INTERVAL '7 days'
   FROM users u, categories sub
@@ -205,7 +205,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, c.category_id,
        '[DEV SEED] 제도판 + T자 세트',
-       15000, 'fair'::product_condition_t, 'selling'::product_status_t, 28,
+       15000, 'medium'::product_condition_t, 'selling'::product_status_t, 28,
        '제도 수업용. 제도판 표면 약간 사용감 있음.',
        NOW() - INTERVAL '20 days'
   FROM users u, categories c
@@ -216,7 +216,7 @@ SELECT u.uid, c.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, c.category_id,
        '[DEV SEED] 컴퍼스/디바이더 세트 (제도용)',
-       5000, 'good'::product_condition_t, 'reserved'::product_status_t, 12,
+       5000, 'medium'::product_condition_t, 'reserved'::product_status_t, 12,
        '예약 진행 중. 케이스 포함 풀세트.',
        NOW() - INTERVAL '2 hours'
   FROM users u, categories c
@@ -227,7 +227,7 @@ SELECT u.uid, c.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] 통계 추론 (Casella & Berger)',
-       32000, 'good'::product_condition_t, 'selling'::product_status_t, 65,
+       32000, 'medium'::product_condition_t, 'selling'::product_status_t, 65,
        '대학원 입시 대비용으로 쓰던 책. 연필·펜 필기 일부.',
        NOW() - INTERVAL '25 days'
   FROM users u, categories sub
@@ -239,7 +239,7 @@ SELECT u.uid, sub.category_id,
 INSERT INTO products (seller_uid, category_id, title, price, condition, status, view_count, description, created_at)
 SELECT u.uid, sub.category_id,
        '[DEV SEED] 데이터베이스 시스템 — 한빛아카데미',
-       20000, 'good'::product_condition_t, 'selling'::product_status_t, 75,
+       20000, 'medium'::product_condition_t, 'selling'::product_status_t, 75,
        '연필 필기 일부, 표지 깨끗. 학부 수업 교재로 적합.',
        NOW() - INTERVAL '3 days'
   FROM users u, categories sub
