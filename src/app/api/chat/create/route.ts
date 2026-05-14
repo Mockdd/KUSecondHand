@@ -35,20 +35,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '본인 상품에는 채팅할 수 없어요' }, { status: 400 })
     }
 
-    // 기존 채팅방 조회
-    const { data: existing } = await supabase
-      .from('chat_rooms')
-      .select('room_id, chat_participants!inner(uid)')
-      .eq('product_id', pid)
-      .eq('chat_participants.uid', user.id)
-
-    if (existing && existing.length > 0) {
-      return NextResponse.json({ room_id: existing[0].room_id })
-    }
-
-    // service role로 채팅방 + 참여자 생성 (RLS 우회)
+    // service role로 RLS 없이 기존 채팅방 조회
     const admin = createServiceRoleClient()
     if (!admin) return NextResponse.json({ error: 'DB 연결 실패' }, { status: 503 })
+
+    const { data: existingParticipation } = await admin
+      .from('chat_participants')
+      .select('room_id')
+      .eq('uid', user.id)
+
+    if (existingParticipation && existingParticipation.length > 0) {
+      const myRoomIds = existingParticipation.map((p) => p.room_id)
+      const { data: existingRoom } = await admin
+        .from('chat_rooms')
+        .select('room_id')
+        .eq('product_id', pid)
+        .in('room_id', myRoomIds)
+        .limit(1)
+        .maybeSingle()
+
+      if (existingRoom) {
+        return NextResponse.json({ room_id: existingRoom.room_id })
+      }
+    }
 
     const { data: room, error: roomError } = await admin
       .from('chat_rooms')
@@ -70,6 +79,16 @@ export async function POST(request: NextRequest) {
     if (partError) {
       return NextResponse.json({ error: '참여자 등록에 실패했어요' }, { status: 500 })
     }
+
+    // 신규 방 생성 시 자동 첫 메시지 전송
+    await admin
+      .from('chat_messages')
+      .insert({
+        room_id: room.room_id,
+        sender_uid: user.id,
+        data: { type: 'text', content: '안녕하세요, 구매 희망합니다!' },
+        original_text: '안녕하세요, 구매 희망합니다!',
+      })
 
     return NextResponse.json({ room_id: room.room_id })
   } catch {

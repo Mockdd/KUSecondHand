@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { translateText } from '@/lib/deepl/translate'
 import type { LanguagePrefEnum } from '@/types/supabase'
 
@@ -25,11 +26,11 @@ export async function POST(request: NextRequest) {
       room_id: number
       match_id?: number | null
       content: string
-      source_lang: LanguagePrefEnum
-      target_lang: LanguagePrefEnum
+      source_lang?: LanguagePrefEnum | null
+      target_lang?: LanguagePrefEnum | null
     }
 
-    const { room_id, match_id, content, source_lang, target_lang } = body
+    const { room_id, match_id, content, source_lang = null, target_lang = null } = body
 
     if (!room_id || !content?.trim()) {
       return NextResponse.json(
@@ -38,8 +39,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 3. 채팅방 참여자 확인
-    const { data: participant } = await supabase
+    // 3. 채팅방 참여자 확인 (admin — chat_participants 자기참조 RLS 우회)
+    const admin = createServiceRoleClient()
+    if (!admin) {
+      return NextResponse.json(
+        { data: null, error: { code: 'INTERNAL_ERROR', message: '서버 오류가 발생했어요' } },
+        { status: 500 }
+      )
+    }
+
+    const { data: participant } = await admin
       .from('chat_participants')
       .select('cp_id')
       .eq('room_id', room_id)
@@ -53,11 +62,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. DeepL 번역 (실패 시 null → 원문만 저장)
-    const translated_text = await translateText(content.trim(), target_lang)
+    // 4. DeepL 번역 (target_lang 없으면 스킵)
+    const translated_text = target_lang ? await translateText(content.trim(), target_lang) : null
 
-    // 5. 메시지 INSERT
-    const { data: message, error: msgError } = await supabase
+    // 5. 메시지 INSERT (admin — chat_messages INSERT 정책도 chat_participants 참조)
+    const { data: message, error: msgError } = await admin
       .from('chat_messages')
       .insert({
         room_id,

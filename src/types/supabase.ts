@@ -328,35 +328,29 @@ export interface Database {
           product_id: string | null
           package_match_id: number | null
           created_at: string
-          deleted_at: string | null
         }
         Insert: {
           room_id?: number
           product_id?: string | null
           package_match_id?: number | null
           created_at?: string
-          deleted_at?: string | null
         }
-        Update: {
-          deleted_at?: string | null
-        }
+        Update: Record<string, never>
       }
 
       // ── 채팅 참여자 ──────────────────────────────────────────────────────────
       chat_participants: {
         Row: {
-          id: number
+          cp_id: number
           room_id: number
           uid: string
           last_read_at: string | null
-          created_at: string
         }
         Insert: {
-          id?: number
+          cp_id?: number
           room_id: number
           uid: string
           last_read_at?: string | null
-          created_at?: string
         }
         Update: {
           last_read_at?: string | null
@@ -370,10 +364,10 @@ export interface Database {
           room_id: number
           sender_uid: string
           data: { type: string; content: string }
-          original_text: string
+          original_text: string | null
           translated_text: string | null
-          source_lang: LanguagePrefEnum
-          target_lang: LanguagePrefEnum
+          source_lang: LanguagePrefEnum | null
+          target_lang: LanguagePrefEnum | null
           created_at: string
         }
         Insert: {
@@ -381,10 +375,10 @@ export interface Database {
           room_id: number
           sender_uid: string
           data: { type: string; content: string }
-          original_text: string
+          original_text?: string | null
           translated_text?: string | null
-          source_lang: LanguagePrefEnum
-          target_lang: LanguagePrefEnum
+          source_lang?: LanguagePrefEnum | null
+          target_lang?: LanguagePrefEnum | null
           created_at?: string
         }
         Update: {
