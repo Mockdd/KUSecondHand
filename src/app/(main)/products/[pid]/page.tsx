@@ -64,6 +64,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               src={images[0].image_url}
               alt=""
               fill
+              unoptimized
               className="object-cover"
               sizes="(max-width:640px) 100vw, 50vw"
               priority
@@ -98,10 +99,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium text-gray-900">{seller.nickname}</span>
                 <TrustBadge trusted={isTrustedSeller(seller.successful_trade_count)} />
-                <span className="text-xs text-gray-500">
-                  매너 온도{' '}
-                  {seller.manner_temperature != null ? String(seller.manner_temperature) : '—'}
-                </span>
               </div>
             </div>
           ) : null}
@@ -125,6 +122,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   src={im.image_url}
                   alt=""
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="96px"
                 />

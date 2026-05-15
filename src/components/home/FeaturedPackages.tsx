@@ -12,13 +12,11 @@ type Package = {
 const PACKAGE_ICONS: Record<string, string> = {
   DORM_BASIC:     '🏠',
   FLAT_FULL:      '🏢',
-  INCOMING_DORM:  '✈️',
 }
 
 const PACKAGE_DESC: Record<string, string> = {
   DORM_BASIC:     '기숙사 생활에 필요한 기본 패키지',
   FLAT_FULL:      '하숙·원룸 생활 완전 구비 패키지',
-  INCOMING_DORM:  '교환학생 기숙사 입주 패키지',
 }
 
 export async function FeaturedPackages() {
@@ -26,28 +24,23 @@ export async function FeaturedPackages() {
   const { data: packages } = await supabase
     .from('essential_packages')
     .select('package_id, template_type, name_ko, name_en, housing_type')
+    .in('template_type', ['DORM_BASIC', 'FLAT_FULL'])
     .order('package_id')
-    .limit(3)
 
   if (!packages || packages.length === 0) return null
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">추천 패키지</h2>
-          <p className="text-xs text-gray-400 mt-0.5">상황에 맞는 패키지를 한 번에</p>
-        </div>
-        <Link href="/recommend/package" className="text-sm text-[#8B0029] font-medium hover:underline">
-          전체보기 →
-        </Link>
+      <div className="mb-5">
+        <h2 className="text-xl font-bold text-gray-900">추천 패키지</h2>
+        <p className="text-xs text-gray-400 mt-0.5">상황에 맞는 패키지를 한 번에</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {(packages as Package[]).map((pkg) => (
           <Link
             key={pkg.package_id}
-            href="/recommend/package"
+            href={`/recommend/package?type=${pkg.template_type}`}
             className="group flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-[#8B0029]/30 transition-all"
           >
             <span className="text-3xl">{PACKAGE_ICONS[pkg.template_type] ?? '📦'}</span>

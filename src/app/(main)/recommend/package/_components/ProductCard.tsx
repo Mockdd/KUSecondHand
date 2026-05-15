@@ -19,7 +19,7 @@ export function ProductCard({
   const borderClass = selected
     ? 'border-[#8B0029] ring-2 ring-[#8B0029]/30 shadow-md'
     : isPreferredSeller
-    ? 'border-blue-400 ring-1 ring-blue-200'
+    ? 'border-[#8B0029] ring-1 ring-[#8B0029]/40'
     : isMultiCategory
     ? 'border-amber-300 hover:border-amber-400 hover:shadow-sm'
     : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
@@ -38,7 +38,7 @@ export function ProductCard({
 
       {/* 같은 판매자 선택중 표시 */}
       {isPreferredSeller && (
-        <div className="absolute left-0 top-0 z-10 rounded-br-lg bg-blue-500 px-1.5 py-0.5">
+        <div className="absolute left-0 top-0 z-10 rounded-br-lg bg-[#8B0029] px-1.5 py-0.5">
           <span className="text-[9px] font-bold text-white leading-none">동일</span>
         </div>
       )}

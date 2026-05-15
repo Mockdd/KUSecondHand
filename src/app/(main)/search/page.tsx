@@ -54,7 +54,7 @@ function ProductCard({ item }: { item: ProductSearchResult }) {
     >
       <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden">
         {item.thumbnail ? (
-          <Image src={item.thumbnail} alt={item.title} width={64} height={64} className="w-full h-full object-cover" />
+          <Image src={item.thumbnail} alt={item.title} width={64} height={64} unoptimized className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">없음</div>
         )}

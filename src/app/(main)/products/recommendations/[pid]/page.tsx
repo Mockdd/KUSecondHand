@@ -215,10 +215,7 @@ export default function ProductDetailPage() {
       <section className="border-t pt-4 space-y-1">
         <p className="text-sm text-gray-500">판매자</p>
         <p className="text-sm text-gray-800">
-          {product.seller.nickname}{' '}
-          <span className="text-gray-500">
-            (매너 {Number(product.seller.manner_temperature).toFixed(1)}°C)
-          </span>
+          {product.seller.nickname}
         </p>
       </section>
 
