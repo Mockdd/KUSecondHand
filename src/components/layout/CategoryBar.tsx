@@ -31,7 +31,7 @@ export function CategoryBar({ categories }: Props) {
 
   return (
     <nav className="max-w-5xl mx-auto px-4">
-      <ul className="flex items-center gap-1">
+      <ul className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         <li>
           <Link
             href="/products"

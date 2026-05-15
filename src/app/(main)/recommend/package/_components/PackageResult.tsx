@@ -86,18 +86,32 @@ export function PackageResult({ template, categories }: Props) {
     if (selectedItems.size === 0) return
     setSending(true)
     try {
-      // 판매자별 대표 상품 1개씩
-      const sellerPidMap = new Map<string, string>()
+      const packageSessionId = crypto.randomUUID()
+
+      // pid → title 조회
+      const pidTitleMap = new Map<string, string>()
+      for (const cat of categories) {
+        for (const p of cat.products) {
+          pidTitleMap.set(p.pid, p.title)
+        }
+      }
+
+      // 판매자별 대표 pid + 선택 상품 제목 목록
+      const sellerMap = new Map<string, { pid: string; titles: string[] }>()
       for (const [pid, item] of selectedItems) {
-        if (!sellerPidMap.has(item.seller_uid)) sellerPidMap.set(item.seller_uid, pid)
+        if (!sellerMap.has(item.seller_uid)) {
+          sellerMap.set(item.seller_uid, { pid, titles: [] })
+        }
+        const title = pidTitleMap.get(pid)
+        if (title) sellerMap.get(item.seller_uid)!.titles.push(title)
       }
 
       const results = await Promise.allSettled(
-        [...sellerPidMap.values()].map((pid) =>
+        [...sellerMap.values()].map(({ pid, titles }) =>
           fetch('/api/chat/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pid }),
+            body: JSON.stringify({ pid, package_session_id: packageSessionId, product_titles: titles }),
           })
         )
       )

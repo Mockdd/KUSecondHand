@@ -44,9 +44,20 @@ export function NavBar() {
 
   return (
     <div className="flex items-center gap-5">
-      <Suspense fallback={<div className="w-52 h-8 bg-gray-100 rounded-lg" />}>
-        <SearchInput />
+      <Suspense fallback={<div className="hidden sm:block w-52 h-8 bg-gray-100 rounded-lg" />}>
+        <div className="hidden sm:block">
+          <SearchInput />
+        </div>
       </Suspense>
+      <Link
+        href="/search"
+        aria-label="검색"
+        className="sm:hidden text-gray-600 hover:text-[#8B0029] transition-colors"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+        </svg>
+      </Link>
 
       <nav className="flex items-center gap-5 text-sm">
         <Link

@@ -14,6 +14,7 @@ interface ChatListItem {
   last_message: string | null
   last_message_at: string | null
   unread_count: number
+  package_session_id?: string | null
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -44,6 +45,59 @@ function InitialAvatar({ name }: { name: string }) {
   return (
     <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#8B0029]/10 text-base font-bold text-[#8B0029]">
       {initial}
+    </div>
+  )
+}
+
+function PackageSessionGroup({ chats }: { chats: ChatListItem[] }) {
+  const [open, setOpen] = useState(false)
+  const totalUnread = chats.reduce((s, c) => s + c.unread_count, 0)
+  const latestTime = chats.reduce((a, b) =>
+    (a.last_message_at ?? '') > (b.last_message_at ?? '') ? a : b
+  ).last_message_at
+
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden shadow-sm">
+      {/* 그룹 헤더 */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-amber-100/60 transition-colors"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-400/20 text-base font-bold text-amber-700">
+          📦
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+            <div className="flex items-center justify-between w-full gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-sm font-bold text-amber-800 truncate">
+                {(() => {
+                  const titles = chats.map((c) => c.subtitle).filter(Boolean)
+                  if (titles.length <= 2) return titles.join(', ')
+                  return `${titles.slice(0, 2).join(', ')} 외 ${titles.length - 2}개`
+                })()}
+              </p>
+              {totalUnread > 0 && (
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#8B0029] text-[10px] font-bold text-white">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </span>
+              )}
+            </div>
+            <p className="shrink-0 text-xs text-amber-500">{formatTime(latestTime)}</p>
+          </div>
+        </div>
+        <span className={`shrink-0 text-amber-500 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}>
+          ›
+        </span>
+      </button>
+
+      {/* 펼쳐지는 채팅 목록 */}
+      {open && (
+        <div className="border-t border-amber-200 bg-white divide-y divide-gray-50">
+          {chats.map((chat) => (
+            <ChatItem key={chat.key} chat={chat} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -84,7 +138,7 @@ function ChatItem({ chat }: { chat: ChatListItem }) {
           {chat.subtitle}
         </p>
         <p className={`mt-1 truncate text-sm ${hasUnread ? 'font-medium text-gray-800' : 'text-gray-500'}`}>
-          {chat.last_message ?? '메시지를 보내보세요'}
+          구매 희망합니다
         </p>
       </div>
 
@@ -181,9 +235,40 @@ export default function ChatListPage() {
 
   const activeChats = chats.filter((c) => c.status === 'active' || c.status === 'matched' || c.status === 'pending')
 
+  // 패키지 세션 그룹화
+  const sessionGroups = new Map<string, ChatListItem[]>()
+  const soloChats: ChatListItem[] = []
+  for (const chat of activeChats) {
+    if (chat.package_session_id) {
+      const group = sessionGroups.get(chat.package_session_id) ?? []
+      group.push(chat)
+      sessionGroups.set(chat.package_session_id, group)
+    } else {
+      soloChats.push(chat)
+    }
+  }
+
+  // 패키지 그룹 + 일반 채팅 시간순 통합 정렬
+  type ListEntry =
+    | { kind: 'solo'; chat: ChatListItem; time: string }
+    | { kind: 'group'; sessionId: string; chats: ChatListItem[]; time: string }
+
+  const unified: ListEntry[] = [
+    ...soloChats.map((chat) => ({
+      kind: 'solo' as const,
+      chat,
+      time: chat.last_message_at ?? '',
+    })),
+    ...[...sessionGroups.entries()].map(([sessionId, chats]) => ({
+      kind: 'group' as const,
+      sessionId,
+      chats,
+      time: chats.reduce((t, c) => ((c.last_message_at ?? '') > t ? (c.last_message_at ?? '') : t), ''),
+    })),
+  ].sort((a, b) => (b.time > a.time ? 1 : -1))
+
   return (
     <div className="space-y-4">
-      {/* 헤더 */}
       <h1 className="text-2xl font-bold text-gray-900">채팅</h1>
 
       {activeChats.length === 0 ? (
@@ -196,9 +281,13 @@ export default function ChatListPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {activeChats.map((chat) => (
-            <ChatItem key={chat.key} chat={chat} />
-          ))}
+          {unified.map((entry) =>
+            entry.kind === 'group' ? (
+              <PackageSessionGroup key={entry.sessionId} chats={entry.chats} />
+            ) : (
+              <ChatItem key={entry.chat.key} chat={entry.chat} />
+            )
+          )}
         </div>
       )}
     </div>

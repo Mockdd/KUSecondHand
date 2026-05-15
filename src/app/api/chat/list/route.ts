@@ -11,6 +11,7 @@ interface ChatListItem {
   last_message: string | null
   last_message_at: string | null
   unread_count: number
+  package_session_id?: string | null
 }
 
 export async function GET() {
@@ -96,6 +97,8 @@ export async function GET() {
         .select(`
           room_id,
           product_id,
+          package_session_id,
+          product_titles,
           products (title, status),
           chat_participants (uid, users!uid (nickname)),
           chat_messages (original_text, created_at, sender_uid)
@@ -119,6 +122,10 @@ export async function GET() {
 
         const productRow = product as { title: string; status: string } | null
         const productStatus = productRow?.status ?? 'selling'
+        const storedTitles = r.product_titles as string[] | null
+        const subtitle = storedTitles && storedTitles.length > 1
+          ? storedTitles.join(', ')
+          : (productRow?.title ?? '상품')
 
         const msgs = (Array.isArray(r.chat_messages) ? r.chat_messages : []) as { original_text: string | null; created_at: string; sender_uid: string }[]
         const latest = msgs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
@@ -133,11 +140,12 @@ export async function GET() {
           key: `prod-${r.room_id}`,
           room_id: r.room_id,
           status: productStatus === 'sold' ? 'sold' : 'active',
-          subtitle: productRow?.title ?? '상품',
+          subtitle,
           counterpart_name: counterpart?.users?.nickname ?? '알 수 없음',
           last_message: latest?.original_text ?? null,
           last_message_at: latest?.created_at ?? null,
           unread_count,
+          package_session_id: (r.package_session_id as string | null) ?? null,
         })
       }
     }

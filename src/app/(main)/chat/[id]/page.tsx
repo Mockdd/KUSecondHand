@@ -279,15 +279,11 @@ export default function ChatRoomPage() {
         </Link>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-gray-900 text-base truncate">{roomInfo.counterpart_name}</p>
-          <p className="text-sm text-gray-400 truncate mt-0.5">
-            {isPackageRoom
-              ? (STATUS_LABEL[matchStatus ?? ''] ?? matchStatus)
-              : (
-                <Link href={`/products/${roomInfo.product_id}`} className="hover:text-[#8B0029] transition-colors">
-                  {roomInfo.product_title} →
-                </Link>
-              )}
-          </p>
+          {isPackageRoom && (
+            <p className="text-sm text-gray-400 truncate mt-0.5">
+              {STATUS_LABEL[matchStatus ?? ''] ?? matchStatus}
+            </p>
+          )}
         </div>
         {isPackageRoom && isActive && (
           <div className="flex gap-2 shrink-0">
@@ -374,7 +370,7 @@ function MessageBubble({ msg, isMe }: { msg: Message; isMe: boolean }) {
       {!isMe && <p className="text-xs text-gray-400 px-2">{msg.sender_name}</p>}
       <div className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
         <div
-          className={`max-w-[72vw] sm:max-w-sm px-4 py-3 text-base leading-relaxed shadow-sm ${
+          className={`max-w-[72vw] sm:max-w-sm px-4 py-3 text-base leading-relaxed shadow-sm whitespace-pre-wrap ${
             isMe
               ? 'bg-[#8B0029] text-white rounded-2xl rounded-br-md'
               : 'bg-white text-gray-800 rounded-2xl rounded-bl-md border border-gray-100'

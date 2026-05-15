@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '로그인이 필요해요' }, { status: 401 })
     }
 
-    const body = await request.json() as { pid: string }
-    const { pid } = body
+    const body = await request.json() as { pid: string; package_session_id?: string; product_titles?: string[] }
+    const { pid, package_session_id, product_titles } = body
     if (!pid) {
       return NextResponse.json({ error: '상품 ID가 없어요' }, { status: 400 })
     }
@@ -61,7 +61,11 @@ export async function POST(request: NextRequest) {
 
     const { data: room, error: roomError } = await admin
       .from('chat_rooms')
-      .insert({ product_id: pid })
+      .insert({
+        product_id: pid,
+        ...(package_session_id ? { package_session_id } : {}),
+        ...(product_titles && product_titles.length > 1 ? { product_titles } : {}),
+      })
       .select('room_id')
       .single()
 
@@ -81,13 +85,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 신규 방 생성 시 자동 첫 메시지 전송
+    const firstMessage =
+      product_titles && product_titles.length > 0
+        ? `안녕하세요! 아래 상품들 구매 희망합니다 :)\n${product_titles.map((t) => `- ${t}`).join('\n')}`
+        : '안녕하세요, 구매 희망합니다!'
+
     await admin
       .from('chat_messages')
       .insert({
         room_id: room.room_id,
         sender_uid: user.id,
-        data: { type: 'text', content: '안녕하세요, 구매 희망합니다!' },
-        original_text: '안녕하세요, 구매 희망합니다!',
+        data: { type: 'text', content: firstMessage },
+        original_text: firstMessage,
       })
 
     return NextResponse.json({ room_id: room.room_id })

@@ -7,6 +7,7 @@
 # Next.js
 /.next/
 /out/
+next-env.d.ts
 
 # env (never commit secrets)
 .env
@@ -17,6 +18,11 @@
 npm-debug.log*
 .DS_Store
 Thumbs.db
+.Rhistory
+docs/.Rhistory
+
+# env files without dot prefix
+env.supabase.local
 
 # IDE
 .idea/

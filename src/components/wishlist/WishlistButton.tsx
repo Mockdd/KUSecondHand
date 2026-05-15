@@ -72,7 +72,7 @@ export function WishlistButton({ pid, compact = false }: Props) {
       onClick={() => (wishlisted ? removeMutation.mutate() : addMutation.mutate())}
       disabled={isPending}
       aria-label={wishlisted ? '찜 해제' : '찜하기'}
-      className={`flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-40 ${
+      className={`flex items-center gap-1.5 rounded-lg border px-5 py-2.5 text-base font-medium transition-colors disabled:opacity-40 ${
         wishlisted
           ? 'border-red-300 bg-red-50 text-red-600 hover:bg-red-100'
           : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400'
