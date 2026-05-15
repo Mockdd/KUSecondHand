@@ -31,7 +31,7 @@ export function PackageRecommendationClient({ majorId, grade }: Props) {
       })
       if (!template) return null
 
-      const categories = await buildPackageResult(supabase, template.package_template_id)
+      const categories = await buildPackageResult(supabase, template.package_template_id, majorId)
       return { template, categories }
     },
   })

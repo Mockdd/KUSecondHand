@@ -58,6 +58,20 @@ COMMENT ON COLUMN product_related_majors.major_id   IS 'FK → majors(major_id),
 
 
 -- ============================================================
+--  1-b. RLS — 전체 공개 읽기 (products 와 동일 패턴)
+--       매핑 정보는 비공개가 아니므로 anon/authenticated 모두 SELECT 허용.
+--       (이 정책 누락 시 클라이언트가 빈 배열만 받아 학과 필터가 동작하지 않음)
+-- ============================================================
+
+ALTER TABLE product_related_majors ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "product_related_majors: 전체 공개 읽기" ON product_related_majors;
+CREATE POLICY "product_related_majors: 전체 공개 읽기"
+    ON product_related_majors FOR SELECT
+    USING (true);
+
+
+-- ============================================================
 --  2. 멱등 클린업 — 본인 페르소나 200매물에 한정
 --     (옆 팀 또는 다른 출처의 prm row 는 건드리지 않음)
 -- ============================================================
