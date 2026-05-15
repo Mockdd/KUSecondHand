@@ -84,7 +84,8 @@ async function fetchTemplateCategories(
 
 async function fetchProductsByCategory(
   supabase: SupabaseClient,
-  categoryId: number
+  categoryId: number,
+  studentMajorId: number | null
 ): Promise<ProductSummary[]> {
   const { data, error } = await supabase
     .from('products')
@@ -95,17 +96,27 @@ async function fetchProductsByCategory(
       condition,
       seller_uid,
       product_images(image_url, display_order),
-      seller:users!fk_products_seller(uid, nickname)
+      seller:users!fk_products_seller(uid, nickname),
+      product_related_majors(major_id)
     `)
     .eq('category_id', categoryId)
     .eq('status', 'selling')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(50)
 
   if (error || !data) return []
 
-  return data.map((p) => {
+  // 학과 매핑 없는 매물(학과 무관) OR 학생 학과와 매칭되는 매물만 통과
+  const filtered = studentMajorId === null
+    ? data
+    : data.filter((p) => {
+        const majors = (p.product_related_majors ?? []) as { major_id: number }[]
+        if (majors.length === 0) return true
+        return majors.some((m) => m.major_id === studentMajorId)
+      })
+
+  return filtered.slice(0, 20).map((p) => {
     const images = (p.product_images ?? []) as { image_url: string; display_order: number }[]
     const sorted = [...images].sort((a, b) => a.display_order - b.display_order)
     const seller = Array.isArray(p.seller) ? p.seller[0] : p.seller
@@ -123,13 +134,14 @@ async function fetchProductsByCategory(
 
 export async function buildPackageResult(
   supabase: SupabaseClient,
-  templateId: number
+  templateId: number,
+  studentMajorId: number | null
 ): Promise<CategoryWithProducts[]> {
   const items = await fetchTemplateCategories(supabase, templateId)
 
   return Promise.all(
     items.map(async (item) => {
-      const products = await fetchProductsByCategory(supabase, item.category_id)
+      const products = await fetchProductsByCategory(supabase, item.category_id, studentMajorId)
       return { ...item, products }
     })
   )
