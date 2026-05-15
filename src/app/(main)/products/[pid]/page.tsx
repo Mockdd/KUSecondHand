@@ -64,6 +64,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               src={images[0].image_url}
               alt=""
               fill
+              unoptimized
               className="object-cover"
               sizes="(max-width:640px) 100vw, 50vw"
               priority
@@ -121,6 +122,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   src={im.image_url}
                   alt=""
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="96px"
                 />

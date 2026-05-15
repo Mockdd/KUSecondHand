@@ -171,6 +171,7 @@ export default async function ProductsPage({
                         src={img}
                         alt=""
                         fill
+                        unoptimized
                         className="object-cover"
                         sizes="(max-width:768px) 100vw, 33vw"
                       />

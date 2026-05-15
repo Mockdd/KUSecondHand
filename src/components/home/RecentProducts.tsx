@@ -55,6 +55,7 @@ export async function RecentProducts() {
                         src={img}
                         alt=""
                         fill
+                        unoptimized
                         className="object-cover transition-transform group-hover:scale-[1.03]"
                         sizes="(max-width:640px) 50vw, 33vw"
                       />
