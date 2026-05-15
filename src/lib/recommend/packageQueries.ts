@@ -146,3 +146,61 @@ export async function buildPackageResult(
     })
   )
 }
+
+// ─── essential_packages 기반 추천 (메인 카드 진입용) ────────────────────────────
+
+export type EssentialPackageType = 'DORM_BASIC' | 'FLAT_FULL'
+
+export interface EssentialPackageRow {
+  package_id: number
+  template_type: EssentialPackageType
+  name_ko: string
+  name_en: string | null
+  housing_type: HousingType | null
+}
+
+export async function fetchEssentialPackageByType(
+  supabase: SupabaseClient,
+  type: EssentialPackageType
+): Promise<EssentialPackageRow | null> {
+  const { data, error } = await supabase
+    .from('essential_packages')
+    .select('package_id, template_type, name_ko, name_en, housing_type')
+    .eq('template_type', type)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return data as EssentialPackageRow
+}
+
+export async function buildEssentialPackageCategories(
+  supabase: SupabaseClient,
+  packageId: number,
+  studentMajorId: number | null = null
+): Promise<CategoryWithProducts[]> {
+  const { data, error } = await supabase
+    .from('package_items')
+    .select(`
+      category_id,
+      priority_order,
+      categories(name)
+    `)
+    .eq('package_id', packageId)
+    .order('priority_order')
+
+  if (error || !data) return []
+
+  const items = data.map((item) => ({
+    category_id: item.category_id,
+    category_name: (item.categories as unknown as { name: string } | null)?.name ?? '기타',
+    required_quantity: 1,
+    priority_order: item.priority_order,
+  }))
+
+  return Promise.all(
+    items.map(async (item) => {
+      const products = await fetchProductsByCategory(supabase, item.category_id, studentMajorId)
+      return { ...item, products }
+    })
+  )
+}
