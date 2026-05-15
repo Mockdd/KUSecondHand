@@ -20,8 +20,8 @@ export function HousingTypeSelector({ value, onChange }: Props) {
             onClick={() => onChange(option)}
             className={`rounded-full border px-5 py-2 text-sm font-medium transition-colors ${
               value === option
-                ? 'border-blue-600 bg-blue-600 text-white'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
+                ? 'border-[#8B0029] bg-[#8B0029] text-white hover:bg-[#6B0020]'
+                : 'border-gray-300 bg-white text-gray-700 hover:border-[#8B0029] hover:text-[#8B0029]'
             }`}
           >
             {HOUSING_TYPE_LABELS[option]}

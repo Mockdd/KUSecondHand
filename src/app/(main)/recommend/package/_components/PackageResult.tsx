@@ -52,15 +52,15 @@ export function PackageResult({ template, categories }: Props) {
       ))}
 
       {selectedItems.size > 0 && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4">
+        <div className="rounded-xl border border-[#8B0029]/20 bg-[#FDF2F4] px-5 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-blue-600">{selectedItems.size}개 선택됨</p>
-              <p className="text-xl font-bold text-blue-700">{totalPrice.toLocaleString()}원</p>
+              <p className="text-xs text-[#8B0029]">{selectedItems.size}개 선택됨</p>
+              <p className="text-xl font-bold text-[#8B0029]">{totalPrice.toLocaleString()}원</p>
             </div>
             <button
               onClick={() => setSelectedItems(new Map())}
-              className="rounded-lg border border-blue-300 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-100 transition-colors"
+              className="rounded-lg border border-[#8B0029]/40 bg-white px-3 py-1.5 text-xs font-medium text-[#8B0029] hover:bg-[#8B0029] hover:text-white transition-colors"
             >
               선택 초기화
             </button>

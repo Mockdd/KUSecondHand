@@ -215,7 +215,6 @@ function BuyerView({ matchId, packageId, sellerUid, userId, userSemester, userRe
       {/* 셀러 정보 */}
       <div className="border border-gray-200 rounded p-4 mb-6 text-sm">
         <p className="font-medium mb-1">{sellerUser?.nickname ?? '알 수 없음'}</p>
-        <p className="text-gray-500">매너온도 {sellerUser?.manner_temperature ?? '-'}°C</p>
         <p className="text-gray-500 text-xs mt-1">
           보유 물품: {listings.length} / {items.length}개
         </p>

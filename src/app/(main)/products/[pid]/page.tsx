@@ -83,10 +83,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-gray-800">{seller.nickname}</span>
                 <TrustBadge trusted={isTrustedSeller(seller.successful_trade_count)} />
-                <span className="text-gray-500">
-                  매너 온도{' '}
-                  {seller.manner_temperature != null ? String(seller.manner_temperature) : '—'}
-                </span>
               </div>
             </div>
           ) : null}

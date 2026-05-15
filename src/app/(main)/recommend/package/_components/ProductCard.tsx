@@ -13,15 +13,15 @@ export function ProductCard({ product, selected = false, onToggle }: Props) {
       onClick={onToggle}
       className={`relative flex cursor-pointer flex-col overflow-hidden rounded-lg border transition-all ${
         selected
-          ? 'border-blue-500 ring-2 ring-blue-400 shadow-md'
-          : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+          ? 'border-[#8B0029] ring-2 ring-[#8B0029]/40 shadow-md'
+          : 'border-gray-200 hover:border-[#8B0029]/60 hover:shadow-sm'
       }`}
     >
       {/* 선택 체크 */}
       <div
         className={`absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors ${
           selected
-            ? 'border-blue-500 bg-blue-500 text-white'
+            ? 'border-[#8B0029] bg-[#8B0029] text-white'
             : 'border-gray-300 bg-white/80'
         }`}
       >
@@ -60,7 +60,7 @@ export function ProductCard({ product, selected = false, onToggle }: Props) {
       </div>
       <div className="p-2">
         <p className="truncate text-xs font-medium text-gray-800">{product.title}</p>
-        <p className="mt-0.5 text-xs font-semibold text-blue-600">
+        <p className="mt-0.5 text-xs font-semibold text-[#8B0029]">
           {product.price.toLocaleString()}원
         </p>
         <p className="mt-0.5 text-xs text-gray-400">{CONDITION_LABELS[product.condition]}</p>

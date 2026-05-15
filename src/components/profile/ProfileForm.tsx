@@ -307,11 +307,6 @@ export function ProfileForm() {
           <dd>{profile.student_id ?? '—'}</dd>
           <dt className="text-gray-500">학교 메일 도메인</dt>
           <dd>{profile.school_domain ?? '—'}</dd>
-          <dt className="text-gray-500">매너 온도</dt>
-          <dd className="flex flex-wrap items-center gap-2">
-            <span>{profile.manner_temperature ?? '—'}</span>
-            <span className="text-xs text-gray-500">(받은 리뷰 별점 기준)</span>
-          </dd>
           <dt className="text-gray-500">신뢰 뱃지</dt>
           <dd>
             <TrustBadge trusted={isTrustedSeller(profile.successful_trade_count)} />

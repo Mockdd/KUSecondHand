@@ -77,10 +77,6 @@ export default async function ProductsPage() {
                     <p className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                       <span>{seller.nickname}</span>
                       <TrustBadge trusted={isTrustedSeller(seller.successful_trade_count)} />
-                      <span className="text-gray-400">
-                        온도{' '}
-                        {seller.manner_temperature != null ? String(seller.manner_temperature) : '—'}
-                      </span>
                     </p>
                   ) : null}
                 </div>
