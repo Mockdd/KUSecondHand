@@ -12,13 +12,11 @@ type Package = {
 const PACKAGE_ICONS: Record<string, string> = {
   DORM_BASIC:     '🏠',
   FLAT_FULL:      '🏢',
-  INCOMING_DORM:  '✈️',
 }
 
 const PACKAGE_DESC: Record<string, string> = {
   DORM_BASIC:     '기숙사 생활에 필요한 기본 패키지',
   FLAT_FULL:      '하숙·원룸 생활 완전 구비 패키지',
-  INCOMING_DORM:  '교환학생 기숙사 입주 패키지',
 }
 
 export async function FeaturedPackages() {
@@ -26,8 +24,8 @@ export async function FeaturedPackages() {
   const { data: packages } = await supabase
     .from('essential_packages')
     .select('package_id, template_type, name_ko, name_en, housing_type')
+    .in('template_type', ['DORM_BASIC', 'FLAT_FULL'])
     .order('package_id')
-    .limit(3)
 
   if (!packages || packages.length === 0) return null
 
@@ -43,7 +41,7 @@ export async function FeaturedPackages() {
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {(packages as Package[]).map((pkg) => (
           <Link
             key={pkg.package_id}
