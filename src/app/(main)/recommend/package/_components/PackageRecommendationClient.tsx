@@ -41,7 +41,7 @@ export function PackageRecommendationClient({ majorId, grade }: Props) {
       <HousingTypeSelector value={housingType} onChange={setHousingType} />
 
       {housingType === null && (
-        <p className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <p className="rounded-lg bg-[#FDF2F4] px-4 py-3 text-sm text-[#8B0029]">
           거주 형태를 선택하면 추천 패키지를 볼 수 있어요.
         </p>
       )}
