@@ -8,22 +8,6 @@ function ShoppingBagIcon() {
   )
 }
 
-function GiftIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-7 w-7">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20 12v10H4V12M22 7H2v5h20V7zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
-    </svg>
-  )
-}
-
-function TrendingUpIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-7 w-7">
-      <polyline strokeLinecap="round" strokeLinejoin="round" points="23 6 13.5 15.5 8.5 10.5 1 18" />
-      <polyline strokeLinecap="round" strokeLinejoin="round" points="17 6 23 6 23 12" />
-    </svg>
-  )
-}
 
 function PlusCircleIcon() {
   return (
@@ -43,22 +27,6 @@ const ACTIONS = [
     Icon: ShoppingBagIcon,
     bgColor: '#FDF2F4',
     iconColor: '#8B0029',
-  },
-  {
-    href: '/recommend/package',
-    label: '패키지 추천',
-    desc: '필요한 물품 묶음 추천',
-    Icon: GiftIcon,
-    bgColor: '#EEF2FF',
-    iconColor: '#4F46E5',
-  },
-  {
-    href: '/recommend/resale-price',
-    label: '시세 추천',
-    desc: '내 물건 적정가 계산',
-    Icon: TrendingUpIcon,
-    bgColor: '#F0FDF4',
-    iconColor: '#16A34A',
   },
   {
     href: '/products/new',

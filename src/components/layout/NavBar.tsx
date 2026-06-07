@@ -7,8 +7,6 @@ import { useState, Suspense } from 'react'
 const NAV_ITEMS = [
   { label: '상품',     href: '/products' },
   { label: '패키지',   href: '/packages' },
-  { label: '패키지 추천', href: '/recommend/package' },
-  { label: '시세 추천',   href: '/recommend/resale-price' },
   { label: '시간표 추천', href: '/recommendations' },
   { label: '채팅',     href: '/chat' },
   { label: '위시리스트', href: '/wishlist' },
