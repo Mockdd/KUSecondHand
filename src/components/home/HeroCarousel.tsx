@@ -32,19 +32,6 @@ function SellVisual() {
   )
 }
 
-function PriceVisual() {
-  return (
-    <svg viewBox="0 0 200 200" fill="none" className="w-full h-full" aria-hidden>
-      <rect x="30" y="150" width="24" height="30" rx="3" fill="rgba(255,255,255,0.2)" />
-      <rect x="64" y="120" width="24" height="60" rx="3" fill="rgba(255,255,255,0.3)" />
-      <rect x="98" y="90" width="24" height="90" rx="3" fill="rgba(255,255,255,0.4)" />
-      <rect x="132" y="60" width="24" height="120" rx="3" fill="rgba(255,255,255,0.55)" />
-      <polyline points="42,148 76,118 110,88 144,58" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="144" cy="58" r="5" fill="white" fillOpacity="0.8" />
-    </svg>
-  )
-}
-
 function GridVisual() {
   return (
     <svg viewBox="0 0 200 200" fill="none" className="w-full h-full" aria-hidden>
@@ -82,7 +69,7 @@ interface Slide {
   desc: string
   cta: string
   theme: SlideTheme
-  visual: 'emblem' | 'package' | 'grid' | 'sell' | 'price'
+  visual: 'emblem' | 'package' | 'grid' | 'sell'
 }
 
 const SLIDES: Slide[] = [
@@ -129,17 +116,6 @@ const SLIDES: Slide[] = [
     cta: '판매 시작하기',
     theme: 'light',
     visual: 'sell',
-  },
-  {
-    id: 4,
-    href: '/recommend/resale-price',
-    bg: 'linear-gradient(135deg, #6B0020 0%, #8B0029 40%, #B0003A 100%)',
-    eyebrow: 'Price Guide',
-    title: ['재판매 가격이', '얼마가 적당할까요?'],
-    desc: '상품 상태·카테고리 기반으로\n적정 시세를 바로 알려드려요',
-    cta: '가격 추천받기',
-    theme: 'dark',
-    visual: 'price',
   },
 ]
 
@@ -238,7 +214,6 @@ export function HeroCarousel() {
           {slide.visual === 'package' && <PackageVisual />}
           {slide.visual === 'grid' && <GridVisual />}
           {slide.visual === 'sell' && <SellVisual />}
-          {slide.visual === 'price' && <PriceVisual />}
         </div>
       </div>
 

@@ -33,11 +33,11 @@ export default async function PackageRecommendPage({
     ? '기숙사 기본 패키지'
     : essentialType === 'FLAT_FULL'
       ? '자취·하숙 풀 패키지'
-      : '내 학기 패키지 추천'
+      : '카테고리별 패키지'
 
   const subheading = essentialType
     ? '아래 카테고리별로 매물을 한눈에 확인할 수 있어요.'
-    : '학과·학년·거주 형태를 기반으로 필요한 물품을 한눈에 볼 수 있어요.'
+    : '카테고리별로 필요한 물품을 한눈에 확인할 수 있어요.'
 
   return (
     <div>

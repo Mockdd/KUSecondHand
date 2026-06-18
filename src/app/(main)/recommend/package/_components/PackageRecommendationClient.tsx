@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { HousingType, PackageTemplate } from '@/types/recommend'
@@ -12,7 +11,6 @@ import {
   buildEssentialPackageCategories,
   EssentialPackageType,
 } from '@/lib/recommend/packageQueries'
-import { HousingTypeSelector } from './HousingTypeSelector'
 import { PackageResult } from './PackageResult'
 
 interface Props {
@@ -47,17 +45,15 @@ function TemplateMatchView({
   majorId: number | null
   grade: number | null
 }) {
-  const [housingType, setHousingType] = useState<HousingType | null>(null)
   const semester = getCurrentSemester()
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['package-recommendation', majorId, grade, housingType, semester],
-    enabled: housingType !== null,
+    queryKey: ['package-recommendation', majorId, grade, semester],
     queryFn: async () => {
       const template = await fetchMatchingTemplate(supabase, {
         major_id: majorId,
         grade,
-        housing_type: housingType!,
+        housing_type: null,
         semester,
       })
       if (!template) return null
@@ -69,27 +65,19 @@ function TemplateMatchView({
 
   return (
     <div className="space-y-6">
-      <HousingTypeSelector value={housingType} onChange={setHousingType} />
-
-      {housingType === null && (
-        <p className="rounded-lg bg-[#FDF2F4] px-4 py-3 text-sm text-[#8B0029]">
-          거주 형태를 선택하면 추천 패키지를 볼 수 있어요.
-        </p>
-      )}
-
-      {housingType !== null && isLoading && (
+      {isLoading && (
         <div className="py-12 text-center text-sm text-gray-400">
           패키지를 불러오는 중...
         </div>
       )}
 
-      {housingType !== null && isError && (
+      {isError && (
         <div className="py-12 text-center text-sm text-red-400">
           데이터를 불러오지 못했어요. 다시 시도해주세요.
         </div>
       )}
 
-      {housingType !== null && !isLoading && data === null && (
+      {!isLoading && data === null && (
         <div className="rounded-lg bg-gray-100 px-4 py-8 text-center text-sm text-gray-500">
           조건에 맞는 패키지가 아직 없어요.
         </div>
