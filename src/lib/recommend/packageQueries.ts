@@ -60,26 +60,35 @@ export async function fetchMatchingTemplate(
 async function fetchTemplateCategories(
   supabase: SupabaseClient,
   templateId: number
-): Promise<{ category_id: number; category_name: string; required_quantity: number; priority_order: number }[]> {
+): Promise<{ category_id: number; category_name: string; parent_id: number | null; parent_name: string; required_quantity: number; priority_order: number }[]> {
   const { data, error } = await supabase
     .from('package_template_items')
     .select(`
       category_id,
       required_quantity,
       priority_order,
-      categories(name)
+      categories(name, parent_id, parent:categories!fk_categories_parent(name))
     `)
     .eq('package_template_id', templateId)
     .order('priority_order')
 
   if (error || !data) return []
 
-  return data.map((item) => ({
-    category_id: item.category_id,
-    category_name: (item.categories as unknown as { name: string } | null)?.name ?? '기타',
-    required_quantity: item.required_quantity,
-    priority_order: item.priority_order,
-  }))
+  return data.map((item) => {
+    const cat = item.categories as unknown as {
+      name: string
+      parent_id: number | null
+      parent: { name: string } | null
+    } | null
+    return {
+      category_id: item.category_id,
+      category_name: cat?.name ?? '기타',
+      parent_id: cat?.parent_id ?? null,
+      parent_name: cat?.parent?.name ?? '기타',
+      required_quantity: item.required_quantity,
+      priority_order: item.priority_order,
+    }
+  })
 }
 
 async function fetchProductsByCategory(
@@ -183,19 +192,28 @@ export async function buildEssentialPackageCategories(
     .select(`
       category_id,
       priority_order,
-      categories(name)
+      categories(name, parent_id, parent:categories!fk_categories_parent(name))
     `)
     .eq('package_id', packageId)
     .order('priority_order')
 
   if (error || !data) return []
 
-  const items = data.map((item) => ({
-    category_id: item.category_id,
-    category_name: (item.categories as unknown as { name: string } | null)?.name ?? '기타',
-    required_quantity: 1,
-    priority_order: item.priority_order,
-  }))
+  const items = data.map((item) => {
+    const cat = item.categories as unknown as {
+      name: string
+      parent_id: number | null
+      parent: { name: string } | null
+    } | null
+    return {
+      category_id: item.category_id,
+      category_name: cat?.name ?? '기타',
+      parent_id: cat?.parent_id ?? null,
+      parent_name: cat?.parent?.name ?? '기타',
+      required_quantity: 1,
+      priority_order: item.priority_order,
+    }
+  })
 
   return Promise.all(
     items.map(async (item) => {

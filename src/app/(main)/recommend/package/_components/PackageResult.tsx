@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { CategoryWithProducts, PackageTemplate } from '@/types/recommend'
 import { CategorySection } from './CategorySection'
 
@@ -20,6 +20,20 @@ export function PackageResult({ template, categories }: Props) {
   const [skippedCategories, setSkippedCategories] = useState<Set<number>>(new Set())
   const [toast, setToast] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
+  const [activeTab, setActiveTab] = useState<string>('전체')
+
+  // 실제 데이터에 존재하는 대분류만, 고정 순서로 탭 생성
+  const TAB_ORDER = ['전자기기', '도서/교재', '생활용품', '식품/음료', '의류/잡화', '기타']
+  const tabs = useMemo(() => {
+    const existing = new Set(categories.map((c) => c.parent_name))
+    return ['전체', ...TAB_ORDER.filter((t) => existing.has(t))]
+  }, [categories])
+
+  // 탭 기준 필터링
+  const visibleCategories = useMemo(
+    () => activeTab === '전체' ? categories : categories.filter((c) => c.parent_name === activeTab),
+    [categories, activeTab]
+  )
 
   // 같은 패키지 내 2개 카테고리 이상에 상품을 올린 판매자
   const multiCategorySellers = useMemo(() => {
@@ -148,8 +162,25 @@ export function PackageResult({ template, categories }: Props) {
         </p>
       </div>
 
+      {/* 대분류 탭 */}
+      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? 'border-[#8B0029] bg-[#8B0029] text-white'
+                : 'border-gray-300 bg-white text-gray-600 hover:border-[#8B0029] hover:text-[#8B0029]'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
       {/* 카테고리 섹션 */}
-      {categories.map((category) => (
+      {visibleCategories.map((category) => (
         <CategorySection
           key={category.category_id}
           category={category}

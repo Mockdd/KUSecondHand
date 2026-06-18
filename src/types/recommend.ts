@@ -45,6 +45,8 @@ export interface ProductSummary {
 export interface CategoryWithProducts {
   category_id: number
   category_name: string
+  parent_id: number | null
+  parent_name: string
   required_quantity: number
   priority_order: number
   products: ProductSummary[]
