@@ -67,7 +67,7 @@ async function fetchTemplateCategories(
       category_id,
       required_quantity,
       priority_order,
-      categories(name, parent_id, parent:categories!fk_categories_parent(name))
+      categories(name, parent_id, parent:categories!parent_id(name))
     `)
     .eq('package_template_id', templateId)
     .order('priority_order')
@@ -192,7 +192,7 @@ export async function buildEssentialPackageCategories(
     .select(`
       category_id,
       priority_order,
-      categories(name, parent_id, parent:categories!fk_categories_parent(name))
+      categories(name, parent_id, parent:categories!parent_id(name))
     `)
     .eq('package_id', packageId)
     .order('priority_order')
