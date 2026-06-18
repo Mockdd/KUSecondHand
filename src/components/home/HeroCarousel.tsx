@@ -97,7 +97,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: 2,
-    href: '/packages',
+    href: '/recommend/package',
     bg: 'linear-gradient(135deg, #1E0009 0%, #4A0016 60%, #8B0029 100%)',
     eyebrow: 'Marketplace',
     title: ['학우들이 직접 올린', '중고 패키지'],
