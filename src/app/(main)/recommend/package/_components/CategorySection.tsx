@@ -51,9 +51,6 @@ export function CategorySection({
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="font-medium text-gray-800 truncate">
             {category.category_name}
-            {category.required_quantity > 1 && (
-              <span className="ml-1 text-sm text-gray-400">× {category.required_quantity}</span>
-            )}
           </h3>
           {skipped && (
             <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">

@@ -138,28 +138,19 @@ export function PackageResult({ template, categories }: Props) {
   }
 
   const totalPrice = [...selectedItems.values()].reduce((s, i) => s + i.price, 0)
-  const totalProducts = categories.reduce((s, c) => s + c.products.length, 0)
-  const activeCategoryCount = categories.length - skippedCategories.size
 
   return (
     <div className="space-y-4">
-      {/* 헤더 */}
+      {/* 헤더 — 사용법 안내만 강조 */}
       <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="text-lg font-semibold text-gray-900">{template.title}</h2>
-        {template.description && (
-          <p className="mt-1 text-sm text-gray-500">{template.description}</p>
-        )}
-        <p className="mt-2 text-xs text-gray-400">
-          총 {activeCategoryCount}개 카테고리 · 매물 {totalProducts}건
+        <p className="text-base font-bold text-gray-900">
+          카드를 눌러 담을 상품을 선택하고, 불필요한 카테고리는 &ldquo;선택 안함&rdquo;으로 건너뛰세요.
         </p>
         {multiCategorySellers.size > 0 && (
-          <p className="mt-1 text-xs text-amber-600">
+          <p className="mt-2 text-xs text-amber-600">
             ⭐ 여러 카테고리 상품을 동시에 올린 판매자가 {multiCategorySellers.size}명 있어요
           </p>
         )}
-        <p className="mt-1 text-xs text-gray-400">
-          카드를 눌러 담을 상품을 선택하고, 불필요한 카테고리는 &ldquo;선택 안함&rdquo;으로 건너뛰세요.
-        </p>
       </div>
 
       {/* 대분류 탭 */}
