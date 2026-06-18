@@ -1,15 +1,15 @@
 # KUSecondHand — Data Flywheel Action Plan
 
-> **3명 팀 분담안** — 본인 6단계 (DB + ML), 팀원 1: 프론트엔드 2단계, 팀원 2: DevOps 2단계
-> 기반 문서: `KUSecondHand_DataFlyWheel.txt` (Task 2 팀 분담 계획서)
+> **3명 팀 분담안** — 팀원 0: (DB + ML), 팀원 1: 프론트엔드 2단계, 팀원 2: DevOps 2단계
+> 기반 문서: `KUSecondHand_DataFlyWheel.txt`
 
 ---
 
 ## 목적
 
-KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자가 매물 등록 시 AI가 태그 초안을 제안 → 사용자 수정 행동을 로그로 기록 → 주기적으로 그 데이터로 모델 파인튜닝 → 모델이 점점 정확해지는 자기강화 구조.
+KUSecondHand 서비스에 **데이터 플라이휠 파이프라인**을 구축해서 사용자가 매물 등록할 때 AI가 태그 초안을 제안하면 사용자 수정 행동을 로그로 기록하게 함. 주기적으로 그 데이터로 모델을 파인튜닝시켜 모델의 예측 성능을 점점 향상시키는 사이클을 만듦. 
 
-## 산출물 한눈에
+## Output들
 
 | 영역 | 핵심 파일/리소스 |
 |---|---|
@@ -21,22 +21,22 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 | DevOps | `Dockerfile` (수정), Railway Cron Job, `scripts/notify_slack.py` |
 | Docs | `docs/storage-training-datasets.md`, `docs/ml-pipeline.md`, `docs/monitoring-queries.md`, `docs/cron-setup.md` |
 
-## 작업 의존 관계
+## 작업 순서
 
 ```
-[본인 Step 1·2 — DB 스키마 + RLS + Storage]
+[팀원0 Step 1·2 — DB 스키마 + RLS + Storage]
             │
-            ├──► [본인 Step 3 — predict API]
+            ├──► [팀원0 Step 3 — predict API]
             │            │
             │            ├──► [팀원 1 Step 7 — 피드백 API + TagSuggestionPanel]
             │            │            │
             │            │            └──► [팀원 1 Step 8 — sell 페이지 통합 + UX]
             │            │
-            │            └──► [본인 Step 4 — 학습 데이터 수집]
+            │            └──► [팀원0 Step 4 — 학습 데이터 수집]
             │                         │
-            │                         └──► [본인 Step 5 — 파인튜닝 자동화]
+            │                         └──► [팀원0 Step 5 — 파인튜닝 자동화]
             │                                      │
-            │                                      ├──► [본인 Step 6 — 평가 + E2E]
+            │                                      ├──► [팀원0 Step 6 — 평가 + E2E]
             │                                      │
             │                                      └──► [팀원 2 Step 9 — Docker + Cron]
             │                                                   │
@@ -44,12 +44,12 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 ```
 
 병렬 가능 구간:
-- **본인 Step 4·5** ↔ **팀원 1 Step 7·8** (Step 3 완료 후)
-- **본인 Step 6** ↔ **팀원 2 Step 9** (Step 5 완료 후)
+- **팀원0 Step 4·5** ↔ **팀원 1 Step 7·8** (Step 3 완료 후)
+- **팀원0 Step 6** ↔ **팀원 2 Step 9** (Step 5 완료 후)
 
 ---
 
-# 📦 본인 담당 (DB + ML, 6단계)
+# 팀원0 담당 (DB + ML, 6단계)
 
 ## Step 1 — DB 스키마 + 인덱스
 
@@ -80,8 +80,8 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 **수행할 것**
 
 - `tag_feedback_logs` RLS:
-  - INSERT: `authenticated`, 본인 user_id로만
-  - SELECT: `service_role` 전체, 일반 사용자는 본인 데이터만
+  - INSERT: `authenticated`, 팀원0 user_id로만
+  - SELECT: `service_role` 전체, 일반 사용자는 팀원0 데이터만
 - `model_versions` RLS: SELECT 전체 공개
 - `tag_prediction_cache` RLS: `service_role`만 R/W
 - Supabase → Storage → New Bucket → `training-datasets` (Private)
@@ -97,8 +97,8 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 **전달할 것**
 
-- 🔔 **팀원 1·2 모두에게**: `src/types/feedback.ts` — 두 명의 작업 시작 트리거
-- 🔔 **팀원 2에게**: Storage 버킷 이름, 경로 컨벤션, 접근 방법 (`docs/storage-training-datasets.md` 링크)
+-  **팀원 1·2 모두에게**: `src/types/feedback.ts` — 두 명의 작업 시작 트리거
+-  **팀원 2에게**: Storage 버킷 이름, 경로 컨벤션, 접근 방법 (`docs/storage-training-datasets.md` 링크)
 
 ---
 
@@ -124,7 +124,7 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 **전달할 것**
 
-- 🔔 **팀원 1에게**: predict API 요청/응답 스펙 (타입 포함). 프론트 `useTagSuggestion` 훅에서 호출
+-  **팀원 1에게**: predict API 요청/응답 스펙 (타입 포함). 프론트 `useTagSuggestion` 훅에서 호출
 
 ---
 
@@ -155,7 +155,7 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 **전달할 것**
 
-- 🔔 **전체 팀에게**: 파인튜닝 비용 예측 = 샘플 수 × 평균 토큰 × 단가 (gpt-4o-mini 기준)
+-  **전체 팀에게**: 파인튜닝 비용 예측 = 샘플 수 × 평균 토큰 × 단가 (gpt-4o-mini 기준)
 
 ---
 
@@ -184,7 +184,7 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 **전달할 것**
 
-- 🔔 **팀원 2에게**:
+-  **팀원 2에게**:
   - 스크립트 실행 명령: `python scripts/run_finetune.py`
   - 환경변수: `OPENAI_API_KEY`, `OPENAI_ORG_ID`, `FINETUNE_MIN_SAMPLES`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
   - 예상 실행시간: 30분~2시간
@@ -216,13 +216,13 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 **전달할 것**
 
-- 🔔 **전체 팀에게**: 첫 파인튜닝 결과 리포트 (Before/After Precision·Recall) + 데모
+-  **전체 팀에게**: 첫 파인튜닝 결과 리포트 (Before/After Precision·Recall) + 데모
 
 ---
 
-# 👤 팀원 1 담당 (프론트엔드, 2단계)
+# 팀원 1 담당 (프론트엔드, 2단계)
 
-> **선행 조건**: 본인 Step 2 완료(타입 공유), Step 3 완료(predict API)
+> **선행 조건**: 팀원0 Step 2 완료(타입 공유), Step 3 완료(predict API)
 
 ## Step 7 — 피드백 API + 태그 제안 컴포넌트
 
@@ -241,14 +241,14 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
   - 편집 시작 시각 기록 → `sessionDurationMs` 계산
 - `src/hooks/useTagSuggestion.ts` (predict/feedback API 호출 로직)
 
-**본인에게서 받을 것**
+**팀원0에게서 받을 것**
 
 - `src/types/feedback.ts` (Step 2에서 전달)
 - predict API 스펙 (Step 3에서 전달)
 
 **전달할 것**
 
-- 🔔 **본인에게**: 피드백 로그 데이터 샘플 (RLS 검증용)
+-  **팀원0에게**: 피드백 로그 데이터 샘플 (RLS 검증용)
 
 ---
 
@@ -270,15 +270,15 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 **전달할 것**
 
-- 🔔 **본인에게**: 실제 사용자 편집 패턴 관찰 (자주 삭제/추가되는 태그) — 본인 Step 3 프롬프트 개선 자료
-- 🔔 **팀원 2에게**: 프론트엔드 사용 환경변수 최종 목록
-- 🔔 **전체 팀에게**: 컴포넌트 스크린샷 + 사용 시연
+-  **팀원0에게**: 실제 사용자 편집 패턴 관찰 (자주 삭제/추가되는 태그) — 팀원0 Step 3 프롬프트 개선 자료
+-  **팀원 2에게**: 프론트엔드 사용 환경변수 최종 목록
+-  **전체 팀에게**: 컴포넌트 스크린샷 + 사용 시연
 
 ---
 
-# ⚙️ 팀원 2 담당 (DevOps, 2단계)
+#  팀원 2 담당 (DevOps, 2단계)
 
-> **선행 조건**: 본인 Step 5 완료
+> **선행 조건**: 팀원0 Step 5 완료
 
 ## Step 9 — Docker + Railway Cron + 환경변수
 
@@ -299,15 +299,15 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
   - 타임아웃: 3600s
   - 재시도: 최대 2회
 
-**본인에게서 받을 것**
+**팀원0에게서 받을 것**
 
 - `run_finetune.py` 실행 명령, 환경변수 목록, 예상 실행시간 (Step 5에서 전달)
 
 **전달할 것**
 
-- 🔔 **본인에게**: Python 실행 환경의 Docker 이미지 태그, Python 경로
-- 🔔 **본인에게**: pg_cron 설정 여부 확인 요청 (Railway Cron과 중복 방지 — 현재 계획은 Railway Cron만 사용)
-- 🔔 **전체 팀에게**: Railway 배포 URL + Cron 실행 로그 접근 방법
+-  **팀원0에게**: Python 실행 환경의 Docker 이미지 태그, Python 경로
+-  **팀원0에게**: pg_cron 설정 여부 확인 요청 (Railway Cron과 중복 방지 — 현재 계획은 Railway Cron만 사용)
+-  **전체 팀에게**: Railway 배포 URL + Cron 실행 로그 접근 방법
 
 ---
 
@@ -331,7 +331,7 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 **전달할 것**
 
-- 🔔 **전체 팀에게**: 모니터링 쿼리 + Supabase Dashboard 북마크 링크
+-  **전체 팀에게**: 모니터링 쿼리 + Supabase Dashboard 북마크 링크
 
 ---
 
@@ -348,14 +348,14 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 | 기간 | 마일스톤 |
 |---|---|
-| Day 1~2 | 본인 Step 1~2 (DB + RLS + Storage + 타입 공유) |
-| Day 3~5 | 본인 Step 3 (predict API) + 팀원 1 Step 7 (병렬 가능 구간 진입) |
-| Day 4~7 | 본인 Step 4~5 (수집 + 파인튜닝) + 팀원 1 Step 8 |
+| Day 1~2 | 팀원0 Step 1~2 (DB + RLS + Storage + 타입 공유) |
+| Day 3~5 | 팀원0 Step 3 (predict API) + 팀원 1 Step 7 (병렬 가능 구간 진입) |
+| Day 4~7 | 팀원0 Step 4~5 (수집 + 파인튜닝) + 팀원 1 Step 8 |
 | Day 6~8 | 팀원 2 Step 9 (Docker + Cron) |
-| Day 9~10 | 본인 Step 6 (평가 + E2E) + 팀원 2 Step 10 (알림 + 모니터링) |
+| Day 9~10 | 팀원0 Step 6 (평가 + E2E) + 팀원 2 Step 10 (알림 + 모니터링) |
 | Day 11~12 | 전체 E2E 테스트 + 버그 수정 + 문서화 + 최종 배포 |
 
-## Day 1 즉시 할 것 (본인)
+## Day 1 즉시 할 것 (팀원0)
 
 1. dev Supabase URL + anon key를 전체 팀에 공유
 2. OpenAI 비용 예산 한도 결정 + 전체 팀 공유
@@ -366,4 +366,4 @@ KUSecondHand에 **데이터 플라이휠 파이프라인**을 구축. 사용자�
 
 | 일자 | 내용 | 작성자 |
 |---|---|---|
-| 2026-06-18 | 초안 작성 (3인 분담 — 본인 6단계, 팀원 2명 각 2단계) | — |
+| 2026-06-18 | 초안 작성 (3인 분담 — 팀원0 6단계, 팀원 2명 각 2단계) | — |
