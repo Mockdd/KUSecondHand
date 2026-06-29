@@ -10,7 +10,9 @@
 - Step 1~6 완료.
 - `feature/flywheel-plan` 브랜치는 작업 완료 후 삭제됨.
 - 이후 작업은 `staging` 브랜치를 기준으로 단계별 feature 브랜치를 분기한다.
-- Step 7 코드 구현 완료. Step 8~10 남음.
+- Step 7 코드 구현 완료.
+- Step 8-1/8-3 완료: 판매 등록 페이지의 `productId` 제약 정리, 등록 성공 후 태그 제안 패널 전환 구현, FE 테스트 문서 작성.
+- Step 8 실제 환경 검증과 Step 9~10 남음.
 - 실제 판매 등록 진입점은 `src/app/(main)/sell/page.tsx`가 아니라 리다이렉트 대상인 `src/app/(main)/products/new/page.tsx`다.
 
 ## 브랜치/배포 워크플로우 (Step 7 이후)
@@ -291,6 +293,16 @@ KUSecondHand 서비스에 **데이터 플라이휠 파이프라인**을 구축�
 - 기존 판매 등록 Form에 `TagSuggestionPanel` 통합
   - 현재 `src/app/(main)/sell/page.tsx`는 `/products/new`로 리다이렉트만 수행
   - 실제 통합 대상: `src/app/(main)/products/new/page.tsx`
+- 구현 제약:
+  - `/api/tags/predict`와 `/api/tags/feedback` 모두 현재 `productId`를 요구한다.
+  - 신규 등록 화면에서는 상품 생성 전 `productId`가 아직 없으므로, 이미지 선택 직후에는 Step 7 컴포넌트를 그대로 호출할 수 없다.
+  - Step 8 구현은 기존 API 스펙을 유지하고, 상품 생성 성공 후 반환된 `pid`와 업로드된 첫 번째 이미지 URL을 사용해 태그 추천/피드백 흐름을 실행한다.
+- 구현 순서:
+  1. `src/app/(main)/products/new/page.tsx`에 태그 상태(`suggestedTags`, `confirmedTags`, `tagFeedbackPayload`)를 추가한다.
+  2. 이미지 업로드 및 `/api/products` 등록 성공 후 반환된 `pid`를 확보한다.
+  3. 첫 번째 이미지 URL과 `pid`로 태그 제안 UI를 열 수 있도록 한다.
+  4. 사용자가 태그를 확정하면 `/api/tags/feedback`을 best-effort로 호출한다.
+  5. 피드백 저장 실패는 매물 등록 성공 흐름을 막지 않는다.
 - 이미지 업로드 완료 후 자동 활성화
 - Form submit 시 `/api/tags/feedback` 호출 (fire-and-forget — 실패해도 매물 등록은 정상)
 - UX:

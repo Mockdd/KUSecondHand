@@ -4,8 +4,10 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
+import TagSuggestionPanel from '@/components/products/TagSuggestionPanel'
 
 type Category = { category_id: number; parent_id: number | null; name: string }
+type CreatedProduct = { pid: string; imageUrl: string }
 
 /** DB `product_condition_t` — 상·중·하 */
 const CONDITION_OPTIONS = [
@@ -29,6 +31,9 @@ function NewProductPageInner() {
   const [previews, setPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [createdProduct, setCreatedProduct] = useState<CreatedProduct | null>(null)
+  const [confirmedTags, setConfirmedTags] = useState<string[] | null>(null)
+  const [feedbackLogId, setFeedbackLogId] = useState<string | null>(null)
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
@@ -110,6 +115,13 @@ function NewProductPageInner() {
 
       const json = await res.json() as { pid?: string; error?: string }
       if (!res.ok) throw new Error(json.error ?? '등록에 실패했습니다.')
+      if (!json.pid) throw new Error('등록된 상품 ID를 확인할 수 없습니다.')
+
+      if (imageUrls[0]) {
+        setCreatedProduct({ pid: json.pid, imageUrl: imageUrls[0] })
+        return
+      }
+
       router.push(`/products/${json.pid}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다.')
@@ -122,7 +134,37 @@ function NewProductPageInner() {
     <div className="max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">판매</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
+      {createdProduct ? (
+        <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
+          <div className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+            상품 등록이 완료되었습니다.
+          </div>
+
+          <TagSuggestionPanel
+            imageUrl={createdProduct.imageUrl}
+            productId={createdProduct.pid}
+            onTagsConfirmed={setConfirmedTags}
+            onFeedbackSubmitted={setFeedbackLogId}
+            submitFeedbackOnConfirm
+          />
+
+          {confirmedTags && (
+            <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">
+              확정된 태그: {confirmedTags.length > 0 ? confirmedTags.join(', ') : '없음'}
+              {feedbackLogId ? ` · 로그 ${feedbackLogId}` : ''}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => router.push(`/products/${createdProduct.pid}`)}
+            className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+          >
+            상품 상세로 이동
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
 
           {/* 이미지 */}
           <div>
@@ -264,6 +306,7 @@ function NewProductPageInner() {
             {uploading ? '등록 중...' : '등록하기'}
           </button>
         </form>
+      )}
     </div>
   )
 }
