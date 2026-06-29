@@ -15,6 +15,20 @@
 
 ## Manual Test Scenarios
 
+### 0. Product Condition Enum Compatibility
+
+Steps:
+1. Open `/products/new`.
+2. Select each condition option: `상`, `중`, `하`.
+3. Submit a valid product.
+
+Expected:
+- Product registration does not fail with `invalid input value for enum product_condition_t`.
+- If the target DB still uses the legacy enum, API maps `high -> like_new`, `medium -> good`, `low -> poor` as a temporary compatibility fallback.
+- Long-term target remains migration `011_product_condition_three.sql`, where DB enum values are `high`, `medium`, `low`.
+
+Status: Failed on Railway production before compatibility fallback.
+
 ### 1. Product Registration Without Image
 
 Steps:

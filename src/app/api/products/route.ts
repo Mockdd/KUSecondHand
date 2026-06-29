@@ -5,6 +5,11 @@ import { createEmbedding, buildProductEmbeddingText } from '@/lib/openai/embeddi
 import type { ProductConditionEnum } from '@/types/supabase'
 
 const PRODUCT_CONDITIONS: ProductConditionEnum[] = ['high', 'medium', 'low']
+const LEGACY_PRODUCT_CONDITION_MAP: Record<ProductConditionEnum, string> = {
+  high: 'like_new',
+  medium: 'good',
+  low: 'poor',
+}
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -52,20 +57,40 @@ export async function POST(request: NextRequest) {
   const productCondition = condition as ProductConditionEnum
   if (!category_id) return NextResponse.json({ error: '카테고리를 선택해주세요.' }, { status: 400 })
 
-  const { data: product, error: productError } = await supabase
+  const productInsert = {
+    seller_uid: user.id,
+    title: title.trim(),
+    price,
+    condition: productCondition,
+    category_id,
+    description: description?.trim() || null,
+  }
+
+  let { data: product, error: productError } = await supabase
     .from('products')
-    .insert({
-      seller_uid: user.id,
-      title: title.trim(),
-      price,
-      condition: productCondition,
-      category_id,
-      description: description?.trim() || null,
-    })
+    .insert(productInsert)
     .select('pid')
     .single()
 
+  if (
+    productError?.message.includes('invalid input value for enum product_condition_t')
+  ) {
+    const fallbackCondition = LEGACY_PRODUCT_CONDITION_MAP[productCondition]
+    const fallbackResult = await supabase
+      .from('products')
+      .insert({
+        ...productInsert,
+        condition: fallbackCondition,
+      })
+      .select('pid')
+      .single()
+
+    product = fallbackResult.data
+    productError = fallbackResult.error
+  }
+
   if (productError) return NextResponse.json({ error: productError.message }, { status: 500 })
+  if (!product) return NextResponse.json({ error: '상품 등록 결과를 확인할 수 없습니다.' }, { status: 500 })
 
   if (image_urls && image_urls.length > 0) {
     const images = image_urls.map((url, i) => ({

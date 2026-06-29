@@ -16,6 +16,11 @@ const CONDITION_LABEL: Record<string, string> = {
   high: '상',
   medium: '중',
   low: '하',
+  new: '새 상품',
+  like_new: '상',
+  good: '중',
+  fair: '중',
+  poor: '하',
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
