@@ -11,11 +11,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
+        hostname: 'placehold.co',
       },
-      { protocol: 'https', hostname: 'placehold.co' },
-      { protocol: 'https', hostname: 'loremflickr.com' },
     ],
+    dangerouslyAllowSVG: true,
   },
 }
 
