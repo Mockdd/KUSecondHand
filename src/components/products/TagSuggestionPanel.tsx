@@ -38,21 +38,25 @@ export default function TagSuggestionPanel({
   } = useTagSuggestion()
   const [input, setInput] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
+  const [confirmed, setConfirmed] = useState(false)
 
   const canAdd = useMemo(() => tags.length < MAX_TAGS, [tags.length])
 
   useEffect(() => {
     if (!imageUrl || !productId) {
       reset()
+      setConfirmed(false)
       return
     }
 
+    setConfirmed(false)
     predict({ imageUrl, productId }).catch(() => {
       // 에러 메시지는 훅 상태로 노출하고, 사용자는 수동 태그 입력을 계속할 수 있다.
     })
   }, [imageUrl, productId, predict, reset])
 
   function addTag(rawTag: string) {
+    if (confirmed) return
     const tag = normalizeTag(rawTag)
     setLocalError(null)
 
@@ -75,6 +79,7 @@ export default function TagSuggestionPanel({
   }
 
   function removeTag(tag: string) {
+    if (confirmed) return
     setLocalError(null)
     setTags(tags.filter((item) => item !== tag))
   }
@@ -92,8 +97,11 @@ export default function TagSuggestionPanel({
   }
 
   async function handleConfirm() {
+    if (confirmed) return
+
     setLocalError(null)
     onTagsConfirmed(tags)
+    setConfirmed(true)
 
     if (!submitFeedbackOnConfirm) return
 
@@ -102,6 +110,7 @@ export default function TagSuggestionPanel({
       onFeedbackSubmitted?.(result.logId)
     } catch {
       // 피드백 실패는 확정 UX를 막지 않는다.
+      setConfirmed(false)
     }
   }
 
@@ -122,7 +131,8 @@ export default function TagSuggestionPanel({
             <button
               type="button"
               onClick={() => removeTag(tag)}
-              className="ml-1 flex h-4 w-4 items-center justify-center rounded-full text-xs text-indigo-500 hover:bg-indigo-100 hover:text-indigo-800"
+              disabled={confirmed}
+              className="ml-1 flex h-4 w-4 items-center justify-center rounded-full text-xs text-indigo-500 hover:bg-indigo-100 hover:text-indigo-800 disabled:opacity-40"
               aria-label={`${tag} 태그 삭제`}
             >
               x
@@ -137,7 +147,7 @@ export default function TagSuggestionPanel({
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleInputKeyDown}
-          disabled={!canAdd}
+          disabled={!canAdd || confirmed}
           maxLength={30}
           placeholder={canAdd ? '태그 추가' : '태그 최대 개수 도달'}
           className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
@@ -145,7 +155,7 @@ export default function TagSuggestionPanel({
         <button
           type="button"
           onClick={() => addTag(input)}
-          disabled={!canAdd || !input.trim()}
+          disabled={!canAdd || !input.trim() || confirmed}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-50"
         >
           추가
@@ -162,10 +172,10 @@ export default function TagSuggestionPanel({
         <button
           type="button"
           onClick={handleConfirm}
-          disabled={loading || submitting}
+          disabled={loading || submitting || confirmed}
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
         >
-          {submitting ? '저장 중...' : '태그 확정'}
+          {confirmed ? '확정 완료' : submitting ? '저장 중...' : '태그 확정'}
         </button>
       </div>
     </section>
