@@ -5,6 +5,30 @@
 
 ---
 
+## 현재 진행 상태 (2026-06-29)
+
+- Step 1~6 완료.
+- `feature/flywheel-plan` 브랜치는 작업 완료 후 삭제됨.
+- 이후 작업은 `staging` 브랜치를 기준으로 단계별 feature 브랜치를 분기한다.
+- Step 7 코드 구현 완료. Step 8~10 남음.
+- 실제 판매 등록 진입점은 `src/app/(main)/sell/page.tsx`가 아니라 리다이렉트 대상인 `src/app/(main)/products/new/page.tsx`다.
+
+## 브랜치/배포 워크플로우 (Step 7 이후)
+
+1. `staging`에서 `feature/flywheel-stepN` 브랜치 분기.
+2. 코드 작성 및 커밋.
+3. 라이브 동작 영향이 있거나 Railway 환경 검증이 필요한 변경은 GitHub `debug` 브랜치에 먼저 병합 후 Railway debug 환경에서 테스트.
+4. 검증 완료 후 GitHub `staging` 브랜치 PR에 병합.
+
+`debug` 병합 생략 가능 조건:
+- 문서, Python 스크립트, 설정 파일처럼 라이브 앱 동작에 직접 영향이 없는 변경.
+- Railway debug 환경에서 검증할 수 없는 변경.
+- 위 조건에 해당하면 feature 브랜치에서 바로 `staging` PR로 진행.
+
+GitHub PR 생성 기준:
+- base: `staging`
+- compare: `feature/flywheel-stepN`
+
 ## 목적
 
 KUSecondHand 서비스에 **데이터 플라이휠 파이프라인**을 구축해서 사용자가 매물 등록할 때 AI가 태그 초안을 제안하면 사용자 수정 행동을 로그로 기록하게 함. 주기적으로 그 데이터로 모델을 파인튜닝시켜 모델의 예측 성능을 점점 향상시키는 사이클을 만듦. 
@@ -125,6 +149,10 @@ KUSecondHand 서비스에 **데이터 플라이휠 파이프라인**을 구축�
 **전달할 것**
 
 -  **팀원 1에게**: predict API 요청/응답 스펙 (타입 포함). 프론트 `useTagSuggestion` 훅에서 호출
+  - endpoint: `POST /api/tags/predict`
+  - request: `{ imageUrl: string, productId: string }`
+  - response: `{ tags: string[], modelVersionId: number, modelLabel: string, cached: boolean }`
+  - expected latency: cache hit 약 50ms, cache miss 약 3~5s
 
 ---
 
@@ -223,6 +251,7 @@ KUSecondHand 서비스에 **데이터 플라이휠 파이프라인**을 구축�
 # 팀원 1 담당 (프론트엔드, 2단계)
 
 > **선행 조건**: 팀원0 Step 2 완료(타입 공유), Step 3 완료(predict API)
+> 현재 상태: 선행 조건 완료. `src/types/feedback.ts`, `src/app/api/tags/predict/route.ts` 존재.
 
 ## Step 7 — 피드백 API + 태그 제안 컴포넌트
 
@@ -233,8 +262,11 @@ KUSecondHand 서비스에 **데이터 플라이휠 파이프라인**을 구축�
   - 서버에서 계산: `addedTags = finalTags - predictedTags`, `removedTags = predictedTags - finalTags`
   - `tag_feedback_logs` INSERT (service role)
   - 응답: `{ success: boolean, logId: string }`
+- 실제 타입 파일 기준 요청 필드명:
+  - `{ productId, predictedTags, finalTags, modelVersionId, sessionDurationMs }`
 - `src/components/products/TagSuggestionPanel.tsx`
-  - Props: `{ imageUrl: string, onTagsConfirmed: (tags: string[]) => void }`
+  - Props: `{ imageUrl: string, productId: string, onTagsConfirmed: (tags: string[]) => void }`
+  - `productId`는 기존 predict API 요청 스펙상 필수
   - `/api/tags/predict` 호출 → 로딩 → 칩 형태로 태그 표시
   - 각 칩에 X 버튼 (삭제), 새 태그 직접 입력 필드 (Enter로 추가)
   - "태그 확정" 버튼 → `onTagsConfirmed` 콜백
@@ -256,7 +288,9 @@ KUSecondHand 서비스에 **데이터 플라이휠 파이프라인**을 구축�
 
 **수행할 것**
 
-- 기존 `src/app/(main)/sell/page.tsx` 또는 관련 Form에 `TagSuggestionPanel` 통합
+- 기존 판매 등록 Form에 `TagSuggestionPanel` 통합
+  - 현재 `src/app/(main)/sell/page.tsx`는 `/products/new`로 리다이렉트만 수행
+  - 실제 통합 대상: `src/app/(main)/products/new/page.tsx`
 - 이미지 업로드 완료 후 자동 활성화
 - Form submit 시 `/api/tags/feedback` 호출 (fire-and-forget — 실패해도 매물 등록은 정상)
 - UX:
