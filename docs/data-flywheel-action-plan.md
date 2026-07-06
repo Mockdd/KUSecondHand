@@ -5,14 +5,16 @@
 
 ---
 
-## 현재 진행 상태 (2026-06-29)
+## 현재 진행 상태 (2026-07-07)
 
-- Step 1~6 완료.
+- Step 1~10 코드 구현 전부 완료.
 - `feature/flywheel-plan` 브랜치는 작업 완료 후 삭제됨.
 - 이후 작업은 `staging` 브랜치를 기준으로 단계별 feature 브랜치를 분기한다.
 - Step 7 코드 구현 완료.
 - Step 8-1/8-3 완료: 판매 등록 페이지의 `productId` 제약 정리, 등록 성공 후 태그 제안 패널 전환 구현, FE 테스트 문서 작성.
-- Step 8 실제 환경 검증과 Step 9~10 남음.
+- Step 9 완료: Dockerfile Python 3.11 멀티스테이지 레이어, `.env.example` 업데이트, `docs/cron-setup.md` 작성.
+- Step 10 완료: `scripts/notify_slack.py` 작성, `run_finetune.py` Slack 알림 연동, `docs/monitoring-queries.md`, `docs/deployment-checklist.md` 작성.
+- **남은 것**: Step 8 실제 환경 검증 (Railway 배포 후 `tag_feedback_logs` 기록 확인), Railway Cron Job 생성, Railway Variables 등록.
 - 실제 판매 등록 진입점은 `src/app/(main)/sell/page.tsx`가 아니라 리다이렉트 대상인 `src/app/(main)/products/new/page.tsx`다.
 
 ## 브랜치/배포 워크플로우 (Step 7 이후)
