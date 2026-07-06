@@ -1,3 +1,10 @@
+# ---- python ----
+FROM python:3.11-slim AS python-ml
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
 # ---- deps ----
 FROM node:22-alpine AS deps
 WORKDIR /app
@@ -30,10 +37,17 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Python 런타임 복사 (ML 스크립트 실행용)
+COPY --from=python-ml /usr/local/lib/python3.11 /usr/local/lib/python3.11
+COPY --from=python-ml /usr/local/bin/python3.11 /usr/local/bin/python3.11
+RUN ln -sf /usr/local/bin/python3.11 /usr/local/bin/python3 && \
+    ln -sf /usr/local/bin/python3.11 /usr/local/bin/python
+
 # standalone 번들에 필요한 파일만 복사
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/scripts ./scripts
 
 EXPOSE 3000
 
