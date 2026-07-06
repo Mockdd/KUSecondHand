@@ -41,6 +41,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from supabase import create_client, Client
 
+from notify_slack import notify_failure, notify_skipped, notify_start, notify_success
+
 load_dotenv()
 
 # ── 설정 ──────────────────────────────────────────────────────────────────────
@@ -232,9 +234,18 @@ def main():
     if args.dry_run:
         print("   ⚡ dry-run 모드: OpenAI 호출 없음\n")
 
+    notify_start(args.days, dry_run=args.dry_run)
+
     # Step 1: 데이터 수집
     print("\n1️⃣  학습 데이터 수집")
-    jsonl_path = run_collect(args.days)
+    try:
+        jsonl_path = run_collect(args.days)
+    except RuntimeError as e:
+        msg = str(e)
+        print(f"\n❌ {msg}", file=sys.stderr)
+        notify_skipped(msg)
+        sys.exit(1)
+
     sample_count = sum(1 for _ in open(jsonl_path, encoding="utf-8"))
     print(f"   → JSONL: {jsonl_path} ({sample_count}건)")
 
@@ -245,6 +256,7 @@ def main():
 
     openai_client = get_openai()
     supabase = get_supabase()
+    fine_tuned_model = None
 
     try:
         # Step 2: 업로드
@@ -257,15 +269,17 @@ def main():
         fine_tuned_model = poll_until_done(openai_client, job_id)
 
         # Step 5a: DB 업데이트
+        version_label_prefix = f"ft-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M')}"
         update_model_versions(supabase, fine_tuned_model, sample_count)
 
         # Step 5b: Storage 백업
         backup_to_storage(supabase, jsonl_path)
 
+        notify_success(fine_tuned_model, sample_count)
+
     except Exception as e:
         print(f"\n❌ 파인튜닝 실패: {e}", file=sys.stderr)
-        # DB는 건드리지 않은 상태 (update_model_versions 이전 실패 시)
-        # 이미 DB를 업데이트한 후 실패한 경우 백업만 재시도 가능
+        notify_failure(str(e))
         sys.exit(1)
     finally:
         # 성공·실패 모두 로컬 파일 삭제
